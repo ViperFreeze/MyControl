@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyControl</string>
+    <string name="sous_titre">Bloque la navigation privée dans tes navigateurs.</string>
+
+    <!-- Blocage -->
+    <string name="section_blocage">BLOCAGE NAVIGATION PRIVÉE</string>
+    <string name="statut_actif">● Protection active</string>
+    <string name="statut_inactif">○ Protection désactivée</string>
+    <string name="bouton_activer">Activer dans Accessibilité</string>
+    <string name="bouton_gerer">Paramètres d\'accessibilité</string>
+    <string name="compteur">Tentatives bloquées : %1$d</string>
+    <string name="toast_bloque">Navigation privée bloquée par MyControl</string>
+    <string name="service_label">MyControl – blocage navigation privée</string>
+    <string name="service_description">Détecte l\'ouverture d\'un onglet privé (Incognito, InPrivate, Mode secret…) dans les navigateurs et le ferme. Protège aussi les réglages de MyControl par un code PIN. Aucune donnée n\'est enregistrée ni envoyée.</string>
+
+    <!-- Anti-désactivation -->
+    <string name="section_protection">PROTECTION ANTI-DÉSACTIVATION</string>
+    <string name="pin_absent">○ Aucun code PIN : MyControl peut être désactivée librement</string>
+    <string name="pin_actif">● Réglages verrouillés par code PIN</string>
+    <string name="pin_deverrouille">○ Déverrouillé (encore %1$d min max)</string>
+    <string name="bouton_definir_pin">Définir un code PIN</string>
+    <string name="bouton_changer_pin">Changer le code PIN</string>
+    <string name="bouton_deverrouiller">Déverrouiller 5 minutes</string>
+    <string name="bouton_reverrouiller">Reverrouiller maintenant</string>
+    <string name="admin_actif">● Désinstallation bloquée (administrateur actif)</string>
+    <string name="admin_inactif">○ MyControl peut être désinstallée</string>
+    <string name="bouton_admin">Bloquer la désinstallation</string>
+    <string name="admin_description">Empêche la désinstallation de MyControl sans le code PIN.</string>
+    <string name="admin_explication">Tant que cette option est active, MyControl ne peut pas être désinstallée. Pour la retirer, il faudra d\'abord déverrouiller l\'appli avec ton code PIN.</string>
+    <string name="admin_avertissement">Désactiver cette protection permettra de désinstaller MyControl.</string>
+
+    <string name="dialogue_nouveau_pin">Nouveau code PIN</string>
+    <string name="dialogue_confirmer_pin">Confirme le code PIN</string>
+    <string name="dialogue_pin_actuel">Code PIN</string>
+    <string name="indice_pin">4 à 8 chiffres</string>
+    <string name="toast_pin_invalide">Le code doit contenir 4 à 8 chiffres.</string>
+    <string name="toast_pin_different">Les deux codes ne correspondent pas.</string>
+    <string name="toast_pin_enregistre">Code PIN enregistré. Réglages verrouillés.</string>
+    <string name="toast_pin_faux">Code incorrect.</string>
+    <string name="toast_attente">Trop d\'essais. Réessaie dans %1$d s.</string>
+    <string name="toast_deverrouille">Réglages déverrouillés pour 5 minutes.</string>
+    <string name="toast_reverrouille">Réglages reverrouillés.</string>
+    <string name="toast_reglage_protege">Réglage protégé par MyControl. Déverrouille-le avec ton code PIN dans l\'appli.</string>
+
+    <!-- Aide -->
+    <string name="aide">Mise en route :\n1. « Activer dans Accessibilité » → Applications installées → MyControl → activer.\n2. Définis un code PIN.\n3. Appuie sur « Bloquer la désinstallation ».\n\nSi l\'option est grisée (Android 13+) : Paramètres → Applications → MyControl → menu ⋮ → « Autoriser les paramètres restreints ».\n\nPour désactiver MyControl : « Déverrouiller 5 minutes », puis coupe le service dans Accessibilité (et retire l\'administrateur pour désinstaller).</string>
+    <string name="navigateurs">Navigateurs surveillés : Chrome, Edge, Brave, Firefox, Samsung Internet, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.</string>
+</resources>

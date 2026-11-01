@@ -1,75 +1,97 @@
 package fr.axel.mycontrol
 
 import android.content.Context
-import java.security.MessageDigest
 import java.security.SecureRandom
 
 /**
- * Code PIN (haché + salé) et fenêtre de déverrouillage temporaire.
- * Tant que le PIN est défini et que l'appli n'est pas déverrouillée,
- * le service bloque les réglages permettant de désactiver MyControl.
+ * Protection par délai.
+ *
+ * Principe : une fois la protection « verrouillée », les écrans qui
+ * permettent d'arrêter ou de désinstaller MyControl sont bloqués.
+ * Pour les rouvrir, il faut :
+ *   1. lancer une « demande de désactivation » ;
+ *   2. attendre 10 minutes (impossible à raccourcir) ;
+ *   3. entrer le code qui s'affiche alors.
+ * Le code valide ouvre une fenêtre de quelques minutes pendant laquelle
+ * l'administrateur peut être retiré et l'appli désinstallée. Ensuite la
+ * protection se réarme automatiquement.
  */
 object Securite {
     private const val FICHIER = "securite"
-    private const val MAX_ECHECS = 5
-    private const val ATTENTE_MS = 60_000L
-    const val DUREE_DEVERROUILLAGE_MS = 5 * 60_000L
+
+    /** Attente incompressible avant que le code soit disponible. */
+    const val DELAI_MS = 10 * 60_000L
+
+    /** Durée de la fenêtre de déverrouillage une fois le code validé. */
+    const val FENETRE_MS = 5 * 60_000L
 
     private fun prefs(c: Context) = c.getSharedPreferences(FICHIER, Context.MODE_PRIVATE)
     private fun maintenant() = System.currentTimeMillis()
 
-    fun pinDefini(c: Context) = prefs(c).contains("pin_hash")
+    // --- État de la protection --------------------------------------------
 
-    fun pinValide(pin: String) = pin.length in 4..8 && pin.all { it.isDigit() }
+    /** La protection est-elle armée ? (seul le code peut l'ouvrir) */
+    fun protege(c: Context) = prefs(c).getBoolean("protege", false)
 
-    fun definirPin(c: Context, pin: String) {
-        val sel = ByteArray(16).also { SecureRandom().nextBytes(it) }.toHex()
+    fun armer(c: Context) {
         prefs(c).edit()
-            .putString("sel", sel)
-            .putString("pin_hash", hacher(sel, pin))
-            .putInt("echecs", 0)
+            .putBoolean("protege", true)
+            .remove("demande_a")
+            .remove("code")
+            .putLong("fenetre_jusqua", 0)
             .apply()
     }
 
-    /** Vérifie le PIN. Après 5 erreurs, bloque les essais pendant 1 minute. */
-    fun verifier(c: Context, pin: String): Boolean {
-        if (attenteRestanteMs(c) > 0) return false
-        val p = prefs(c)
-        val ok = hacher(p.getString("sel", "") ?: "", pin) == p.getString("pin_hash", null)
-        if (ok) {
-            p.edit().putInt("echecs", 0).apply()
-        } else {
-            val echecs = p.getInt("echecs", 0) + 1
-            val edition = p.edit()
-            if (echecs >= MAX_ECHECS) {
-                edition.putInt("echecs", 0).putLong("attente_jusqua", maintenant() + ATTENTE_MS)
-            } else {
-                edition.putInt("echecs", echecs)
-            }
-            edition.apply()
-        }
-        return ok
+    // --- Demande de désactivation -----------------------------------------
+
+    fun demandeEnCours(c: Context) = prefs(c).contains("demande_a")
+
+    /** Démarre l'attente de 10 min et fige un code tiré au hasard. */
+    fun demanderDesactivation(c: Context) {
+        val code = (SecureRandom().nextInt(900_000) + 100_000).toString() // 6 chiffres
+        prefs(c).edit()
+            .putLong("demande_a", maintenant())
+            .putString("code", code)
+            .apply()
     }
 
-    fun attenteRestanteMs(c: Context) =
-        (prefs(c).getLong("attente_jusqua", 0) - maintenant()).coerceAtLeast(0)
-
-    fun deverrouiller(c: Context, dureeMs: Long = DUREE_DEVERROUILLAGE_MS) {
-        prefs(c).edit().putLong("deverrouille_jusqua", maintenant() + dureeMs).apply()
+    fun annulerDemande(c: Context) {
+        prefs(c).edit().remove("demande_a").remove("code").apply()
     }
 
-    fun verrouiller(c: Context) {
-        prefs(c).edit().putLong("deverrouille_jusqua", 0).apply()
+    /** Temps restant avant que le code devienne visible (0 = disponible). */
+    fun attenteRestanteMs(c: Context): Long {
+        if (!demandeEnCours(c)) return 0
+        val fin = prefs(c).getLong("demande_a", 0) + DELAI_MS
+        return (fin - maintenant()).coerceAtLeast(0)
     }
+
+    fun codeDisponible(c: Context) = demandeEnCours(c) && attenteRestanteMs(c) == 0L
+
+    /** Le code n'est renvoyé qu'une fois l'attente écoulée. */
+    fun code(c: Context): String? = if (codeDisponible(c)) prefs(c).getString("code", null) else null
+
+    /** Vérifie le code ; s'il est bon, ouvre la fenêtre de déverrouillage. */
+    fun validerCode(c: Context, saisie: String): Boolean {
+        if (!codeDisponible(c)) return false
+        if (saisie.trim() != prefs(c).getString("code", null)) return false
+        prefs(c).edit()
+            .remove("demande_a")
+            .remove("code")
+            .putLong("fenetre_jusqua", maintenant() + FENETRE_MS)
+            .apply()
+        return true
+    }
+
+    // --- Fenêtre de déverrouillage ----------------------------------------
 
     fun deverrouilleRestantMs(c: Context) =
-        (prefs(c).getLong("deverrouille_jusqua", 0) - maintenant()).coerceAtLeast(0)
+        (prefs(c).getLong("fenetre_jusqua", 0) - maintenant()).coerceAtLeast(0)
 
-    /** Les réglages sont protégés si un PIN existe et qu'on n'est pas en déverrouillage. */
-    fun reglagesProteges(c: Context) = pinDefini(c) && deverrouilleRestantMs(c) == 0L
+    fun reverrouiller(c: Context) {
+        prefs(c).edit().putLong("fenetre_jusqua", 0).apply()
+    }
 
-    private fun hacher(sel: String, pin: String) =
-        MessageDigest.getInstance("SHA-256").digest((sel + pin).toByteArray()).toHex()
-
-    private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
+    /** Les réglages sensibles sont bloqués si la protection est armée hors fenêtre. */
+    fun reglagesProteges(c: Context) = protege(c) && deverrouilleRestantMs(c) == 0L
 }

@@ -13,12 +13,15 @@ Aucune donnée n'est stockée (à part un compteur de blocages) ni envoyée.
 
 ## Protection anti-désactivation
 
-- **Code PIN** (4 à 8 chiffres, haché + salé, 1 min d'attente après 5 erreurs).
-- Tant que le PIN est actif, le service **bloque les écrans des réglages** qui permettent d'arrêter MyControl : page du service d'accessibilité, infos de l'appli (Forcer l'arrêt, Effacer les données, Désinstaller), fenêtre de désinstallation, page Play Store, écran administrateur.
-- **Administrateur de l'appareil** : empêche la désinstallation tant qu'il est actif ; sa désactivation est elle-même bloquée sans PIN.
-- **Déverrouiller 5 minutes** (avec le PIN) pour désactiver ou désinstaller volontairement.
+La protection se **verrouille** d'un bouton. Une fois verrouillée, elle ne peut plus être levée facilement : la seule sortie est de **désinstaller** l'appli, et pour ça il faut passer par un **délai de 10 minutes**.
 
-En cas d'oubli du PIN : redémarrer en **mode sans échec** (les services d'accessibilité tiers y sont coupés), puis désactiver l'administrateur et désinstaller.
+- Tant que la protection est verrouillée, le service **bloque les écrans** permettant d'arrêter MyControl : page du service d'accessibilité, infos de l'appli (Forcer l'arrêt, Effacer les données, Désinstaller), fenêtre de désinstallation, page Play Store, retrait de l'administrateur.
+- **Administrateur de l'appareil** : empêche la désinstallation tant qu'il est actif.
+- **Désactivation volontaire** : bouton « Demander la désactivation » → attente **incompressible de 10 min** → un **code à 6 chiffres** s'affiche → une fois saisi, une fenêtre de 5 min s'ouvre pour retirer l'administrateur et désinstaller. Ensuite la protection se réarme.
+
+Le délai n'est pas raccourcissable depuis l'appli : il repose sur l'horloge, et avancer l'heure du téléphone ne fait que rendre le code disponible plus tôt… mais passe aussi par l'écran de réglages, lui-même bloqué.
+
+En dernier recours (code perdu, bug) : redémarrer en **mode sans échec** coupe les services d'accessibilité tiers, ce qui permet de retirer l'administrateur et de désinstaller.
 
 Navigateurs : Chrome, Edge, Brave, Firefox, Samsung Internet, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
 

@@ -37,9 +37,14 @@ Ouvre le dossier, laisse Gradle se synchroniser, puis **Build → Build APK(s)**
 
 ## Installer sur le téléphone
 1. Copie `app-debug.apk` sur le téléphone et ouvre-le (autorise l'installation d'applis inconnues).
-2. Lance MyControl → **Activer dans Accessibilité** → MyControl → activer.
-3. Android 13+ : si l'option est grisée, Paramètres → Applications → MyControl → ⋮ → **Autoriser les paramètres restreints**.
+2. Lance MyControl : l'appli t'affiche un **assistant en 3 étapes** (activer le blocage → empêcher la désinstallation → verrouiller). Suis-le, il n'y a qu'une action à la fois.
+3. Android 13+ : si l'option d'accessibilité est grisée, Paramètres → Applications → MyControl → ⋮ → **Autoriser les paramètres restreints**.
 4. Samsung / Xiaomi : désactive l'optimisation de batterie pour MyControl, sinon le service peut être coupé.
+
+### À propos des avertissements du téléphone
+MyControl s'installe via un APK (hors Play Store), donc Android peut afficher « application non vérifiée » — c'est normal, choisis « Installer quand même ».
+
+En revanche, soyons clairs : une appli qui **combine un service d'accessibilité, l'administrateur d'appareil et le blocage de sa propre désinstallation** correspond au profil que Google Play Protect surveille de près (c'est aussi le profil des logiciels de contrôle abusifs). Ce comportement ne peut pas être « caché » sans retirer ces fonctions. Les libellés de l'appli sont donc volontairement explicites et transparents, et aucune donnée n'est collectée ni envoyée. Si Play Protect affiche une alerte, elle reste contournable par l'utilisateur, mais le risque ne peut pas être ramené à zéro tant que la protection forte est conservée.
 
 ## Ajuster la détection
 Tout est dans `app/src/main/java/fr/axel/mycontrol/Detection.kt` :

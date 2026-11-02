@@ -7,11 +7,13 @@ import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.text.InputType
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -21,31 +23,37 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 
+/**
+ * Écran unique, pensé comme un assistant : une seule chose à faire à la fois.
+ * L'appli calcule où en est la configuration et n'affiche que l'étape utile.
+ */
 class MainActivity : Activity() {
 
-    private lateinit var statut: TextView
-    private lateinit var compteur: TextView
-    private lateinit var boutonAccessibilite: Button
+    private enum class Phase {
+        SERVICE_OFF,      // le blocage n'est pas activé
+        ADMIN_OFF,        // blocage ok, désinstallation encore possible
+        A_VERROUILLER,    // tout est prêt, reste à verrouiller
+        ACTIVE,           // protection verrouillée, tout va bien
+        ATTENTE,          // demande de désactivation lancée, compte à rebours
+        CODE_PRET,        // le code est disponible
+        FENETRE,          // déverrouillé : désinstallation possible
+    }
 
-    private lateinit var statutProtection: TextView
-    private lateinit var detailProtection: TextView
-    private lateinit var boutonArmer: Button
-    private lateinit var boutonDemander: Button
-    private lateinit var boutonCode: Button
-    private lateinit var boutonAnnuler: Button
-    private lateinit var boutonReverrouiller: Button
-    private lateinit var statutAdmin: TextView
-    private lateinit var boutonAdmin: Button
+    private lateinit var etiquetteEtape: TextView
+    private lateinit var icone: TextView
+    private lateinit var titre: TextView
+    private lateinit var detail: TextView
+    private lateinit var carteCompteur: TextView
+    private lateinit var boutonPrincipal: Button
+    private lateinit var boutonSecondaire: Button
+    private lateinit var lienAide: TextView
 
     private val dpm by lazy { getSystemService(DevicePolicyManager::class.java) }
     private val admin by lazy { ComponentName(this, AdminReceiver::class.java) }
 
     private val handler = Handler(Looper.getMainLooper())
     private val tic = object : Runnable {
-        override fun run() {
-            rafraichir()
-            handler.postDelayed(this, 1000)
-        }
+        override fun run() { rafraichir(); handler.postDelayed(this, 1000) }
     }
 
     private fun px(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -55,116 +63,197 @@ class MainActivity : Activity() {
 
         val racine = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(px(24), px(40), px(24), px(32))
-        }
-        fun texte(t: String = "", taille: Float = 15f, gras: Boolean = false, haut: Int = 0) =
-            TextView(this).apply {
-                text = t
-                textSize = taille
-                if (gras) setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, px(haut), 0, px(4))
-            }.also { racine.addView(it) }
-        fun bouton(libelle: String, action: () -> Unit) =
-            Button(this).apply {
-                text = libelle
-                setOnClickListener { action() }
-            }.also { racine.addView(it) }
-
-        texte(getString(R.string.app_name), 30f, gras = true)
-        texte(getString(R.string.sous_titre), haut = 4)
-
-        // --- Blocage navigation privée ---
-        texte(getString(R.string.section_blocage), 13f, gras = true, haut = 24)
-        statut = texte(taille = 19f, gras = true)
-        compteur = texte()
-        boutonAccessibilite = bouton(getString(R.string.bouton_activer)) {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            setPadding(px(24), px(44), px(24), px(28))
         }
 
-        // --- Anti-désactivation ---
-        texte(getString(R.string.section_protection), 13f, gras = true, haut = 28)
-        statutProtection = texte(taille = 16f, gras = true)
-        detailProtection = texte(taille = 14f)
-        boutonArmer = bouton(getString(R.string.bouton_armer)) { armer() }
-        boutonDemander = bouton(getString(R.string.bouton_demander)) { demander() }
-        boutonCode = bouton(getString(R.string.bouton_entrer_code)) { entrerCode() }
-        boutonAnnuler = bouton(getString(R.string.bouton_annuler)) {
-            Securite.annulerDemande(this); rafraichir()
+        racine.addView(TextView(this).apply {
+            text = getString(R.string.app_name)
+            textSize = 30f
+            setTypeface(typeface, Typeface.BOLD)
+        })
+        racine.addView(TextView(this).apply {
+            text = getString(R.string.sous_titre)
+            textSize = 15f
+            setTextColor(GRIS)
+            setPadding(0, px(4), 0, px(24))
+        })
+
+        // --- Carte principale (l'étape en cours) ---
+        val carte = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(px(22), px(22), px(22), px(22))
+            background = GradientDrawable().apply {
+                cornerRadius = px(20).toFloat()
+                setColor(Color.rgb(245, 247, 250))
+            }
         }
-        boutonReverrouiller = bouton(getString(R.string.bouton_reverrouiller)) {
-            Securite.reverrouiller(this); toast(R.string.toast_reverrouille); rafraichir()
+        etiquetteEtape = TextView(this).apply {
+            textSize = 12.5f
+            setTypeface(typeface, Typeface.BOLD)
+            letterSpacing = 0.05f
+            setTextColor(GRIS)
         }
-        statutAdmin = texte(haut = 14)
-        boutonAdmin = bouton(getString(R.string.bouton_admin)) { activerAdmin() }
+        icone = TextView(this).apply {
+            textSize = 40f
+            setPadding(0, px(6), 0, px(6))
+        }
+        titre = TextView(this).apply {
+            textSize = 21f
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        detail = TextView(this).apply {
+            textSize = 15f
+            setTextColor(GRIS)
+            setPadding(0, px(8), 0, px(18))
+            setLineSpacing(px(3).toFloat(), 1f)
+        }
+        boutonPrincipal = Button(this).apply {
+            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP)
+        }
+        boutonSecondaire = Button(this).apply {
+            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = px(8) }
+        }
+        listOf(etiquetteEtape, icone, titre, detail, boutonPrincipal, boutonSecondaire)
+            .forEach { carte.addView(it) }
+        racine.addView(carte)
+
+        // --- Compteur de blocages ---
+        carteCompteur = TextView(this).apply {
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setPadding(0, px(22), 0, px(4))
+        }
+        racine.addView(carteCompteur)
 
         // --- Aide ---
-        texte(getString(R.string.aide), 14f, haut = 28)
-        texte(getString(R.string.navigateurs), 14f, haut = 16)
+        lienAide = TextView(this).apply {
+            text = getString(R.string.lien_aide)
+            textSize = 14f
+            setTextColor(BLEU)
+            gravity = Gravity.CENTER
+            setPadding(0, px(18), 0, px(8))
+            setOnClickListener { afficherAide() }
+        }
+        racine.addView(lienAide)
 
         setContentView(ScrollView(this).apply { addView(racine) })
     }
 
-    override fun onResume() {
-        super.onResume()
-        handler.post(tic)
-    }
+    override fun onResume() { super.onResume(); handler.post(tic) }
+    override fun onPause() { super.onPause(); handler.removeCallbacks(tic) }
 
-    override fun onPause() {
-        super.onPause()
-        handler.removeCallbacks(tic)
+    // --- Cœur : calcul de la phase et mise à jour de la carte --------------
+
+    private fun phase(): Phase {
+        if (!serviceActif()) return Phase.SERVICE_OFF
+        if (!dpm.isAdminActive(admin)) return Phase.ADMIN_OFF
+        if (!Securite.protege(this)) return Phase.A_VERROUILLER
+        if (Securite.deverrouilleRestantMs(this) > 0) return Phase.FENETRE
+        if (Securite.codeDisponible(this)) return Phase.CODE_PRET
+        if (Securite.demandeEnCours(this)) return Phase.ATTENTE
+        return Phase.ACTIVE
     }
 
     private fun rafraichir() {
-        // Blocage navigation privée
-        val actif = serviceActif()
-        statut.text = getString(if (actif) R.string.statut_actif else R.string.statut_inactif)
-        statut.setTextColor(if (actif) VERT else ROUGE)
-        boutonAccessibilite.text = getString(if (actif) R.string.bouton_gerer else R.string.bouton_activer)
-        compteur.text = getString(R.string.compteur, Stats.lire(this))
+        val p = phase()
+        boutonSecondaire.visibility = View.GONE
 
-        // Protection
-        val protege = Securite.protege(this)
-        val fenetre = Securite.deverrouilleRestantMs(this)
-        val demande = Securite.demandeEnCours(this)
-        val codeDispo = Securite.codeDisponible(this)
+        when (p) {
+            Phase.SERVICE_OFF -> carte(
+                "ÉTAPE 1 SUR 3", "🛡️", getString(R.string.e1_titre), getString(R.string.e1_detail),
+                getString(R.string.e1_bouton)
+            ) { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
 
-        statutProtection.text = when {
-            !protege -> getString(R.string.protection_inactive)
-            fenetre > 0 -> getString(R.string.protection_fenetre, (fenetre / 60_000) + 1)
-            else -> getString(R.string.protection_active)
+            Phase.ADMIN_OFF -> carte(
+                "ÉTAPE 2 SUR 3", "🔒", getString(R.string.e2_titre), getString(R.string.e2_detail),
+                getString(R.string.e2_bouton)
+            ) { activerAdmin() }
+
+            Phase.A_VERROUILLER -> carte(
+                "ÉTAPE 3 SUR 3", "✅", getString(R.string.e3_titre), getString(R.string.e3_detail),
+                getString(R.string.e3_bouton)
+            ) { armer() }
+
+            Phase.ACTIVE -> {
+                carte(
+                    getString(R.string.actif_etiquette), "🟢", getString(R.string.actif_titre),
+                    getString(R.string.actif_detail), getString(R.string.actif_bouton)
+                ) { demander() }
+                etiquetteEtape.setTextColor(VERT)
+            }
+
+            Phase.ATTENTE -> {
+                val min = Securite.attenteRestanteMs(this) / 60_000 + 1
+                carte(
+                    getString(R.string.attente_etiquette), "⏳", getString(R.string.attente_titre),
+                    getString(R.string.attente_detail, min), null, null
+                )
+                secondaire(getString(R.string.bouton_annuler)) {
+                    Securite.annulerDemande(this); rafraichir()
+                }
+            }
+
+            Phase.CODE_PRET -> carte(
+                getString(R.string.code_etiquette), "🔑", getString(R.string.code_titre),
+                getString(R.string.code_detail), getString(R.string.bouton_entrer_code)
+            ) { entrerCode() }
+
+            Phase.FENETRE -> {
+                val min = Securite.deverrouilleRestantMs(this) / 60_000 + 1
+                carte(
+                    getString(R.string.fenetre_etiquette), "🔓", getString(R.string.fenetre_titre),
+                    getString(R.string.fenetre_detail, min), getString(R.string.fenetre_bouton)
+                ) { desinstaller() }
+                secondaire(getString(R.string.bouton_reverrouiller)) {
+                    Securite.reverrouiller(this); toast(R.string.toast_reverrouille); rafraichir()
+                }
+            }
         }
-        statutProtection.setTextColor(if (protege && fenetre == 0L) VERT else ROUGE)
 
-        detailProtection.text = when {
-            !protege -> getString(R.string.detail_inactive)
-            fenetre > 0 -> getString(R.string.detail_fenetre)
-            codeDispo -> getString(R.string.detail_code_pret)
-            demande -> getString(R.string.detail_attente, Securite.attenteRestanteMs(this) / 60_000 + 1)
-            else -> getString(R.string.detail_active)
-        }
-
-        boutonArmer.visibility = gone(!protege)
-        boutonDemander.visibility = gone(protege && fenetre == 0L && !demande)
-        boutonCode.visibility = gone(codeDispo && fenetre == 0L)
-        boutonAnnuler.visibility = gone(demande && fenetre == 0L)
-        boutonReverrouiller.visibility = gone(fenetre > 0)
-
-        val adminActif = dpm.isAdminActive(admin)
-        statutAdmin.text = getString(if (adminActif) R.string.admin_actif else R.string.admin_inactif)
-        statutAdmin.setTextColor(if (adminActif) VERT else ROUGE)
-        boutonAdmin.visibility = gone(!adminActif && (!protege || Securite.deverrouilleRestantMs(this) > 0))
+        val actif = p != Phase.SERVICE_OFF
+        carteCompteur.visibility = if (actif) View.VISIBLE else View.GONE
+        carteCompteur.text = getString(R.string.compteur, Stats.lire(this))
     }
 
-    private fun gone(visible: Boolean) = if (visible) View.VISIBLE else View.GONE
+    private fun carte(
+        etiquette: String, emoji: String, t: String, d: String,
+        bouton: String?, action: (() -> Unit)? = null
+    ) {
+        etiquetteEtape.text = etiquette
+        etiquetteEtape.setTextColor(GRIS)
+        icone.text = emoji
+        titre.text = t
+        detail.text = d
+        if (bouton != null) {
+            boutonPrincipal.visibility = View.VISIBLE
+            boutonPrincipal.text = bouton
+            boutonPrincipal.setOnClickListener { action?.invoke() }
+        } else {
+            boutonPrincipal.visibility = View.GONE
+        }
+    }
+
+    private fun secondaire(libelle: String, action: () -> Unit) {
+        boutonSecondaire.visibility = View.VISIBLE
+        boutonSecondaire.text = libelle
+        boutonSecondaire.setOnClickListener { action() }
+    }
 
     // --- Actions ----------------------------------------------------------
 
+    private fun activerAdmin() {
+        startActivity(
+            Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
+                .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.admin_explication))
+        )
+    }
+
     private fun armer() {
-        if (!serviceActif()) { toast(R.string.toast_active_dabord); return }
         AlertDialog.Builder(this)
             .setTitle(R.string.dialogue_armer_titre)
             .setMessage(R.string.dialogue_armer_message)
-            .setPositiveButton(R.string.bouton_armer) { _, _ ->
+            .setPositiveButton(R.string.e3_bouton) { _, _ ->
                 Securite.armer(this); toast(R.string.toast_armee); rafraichir()
             }
             .setNegativeButton(android.R.string.cancel, null)
@@ -175,7 +264,7 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle(R.string.dialogue_demander_titre)
             .setMessage(R.string.dialogue_demander_message)
-            .setPositiveButton(R.string.bouton_demander) { _, _ ->
+            .setPositiveButton(R.string.actif_bouton) { _, _ ->
                 Securite.demanderDesactivation(this); rafraichir()
             }
             .setNegativeButton(android.R.string.cancel, null)
@@ -189,31 +278,35 @@ class MainActivity : Activity() {
             hint = getString(R.string.indice_code)
         }
         val conteneur = FrameLayout(this).apply {
-            setPadding(px(24), px(8), px(24), 0)
-            addView(champ)
+            setPadding(px(24), px(8), px(24), 0); addView(champ)
         }
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.dialogue_code_titre))
             .setMessage(getString(R.string.dialogue_code_message, code))
             .setView(conteneur)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                if (Securite.validerCode(this, champ.text.toString())) {
-                    toast(R.string.toast_deverrouille)
-                } else {
-                    toast(R.string.toast_code_faux)
-                }
+                if (Securite.validerCode(this, champ.text.toString())) toast(R.string.toast_deverrouille)
+                else toast(R.string.toast_code_faux)
                 rafraichir()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
-    private fun activerAdmin() {
+    /** Pendant la fenêtre : on retire l'admin puis on ouvre la désinstallation. */
+    private fun desinstaller() {
+        if (dpm.isAdminActive(admin)) dpm.removeActiveAdmin(admin)
         startActivity(
-            Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
-                .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.admin_explication))
+            Intent(Intent.ACTION_DELETE, android.net.Uri.parse("package:$packageName"))
         )
+    }
+
+    private fun afficherAide() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.lien_aide)
+            .setMessage(getString(R.string.aide))
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     // --- Utilitaires ------------------------------------------------------
@@ -230,6 +323,9 @@ class MainActivity : Activity() {
 
     companion object {
         private val VERT = Color.rgb(46, 125, 50)
-        private val ROUGE = Color.rgb(198, 40, 40)
+        private val GRIS = Color.rgb(110, 118, 130)
+        private val BLEU = Color.rgb(25, 103, 210)
+        private const val MATCH = LinearLayout.LayoutParams.MATCH_PARENT
+        private const val WRAP = LinearLayout.LayoutParams.WRAP_CONTENT
     }
 }

@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,7 +26,23 @@ jobs:
       - name: Compiler
         run: gradle assembleDebug
 
+      - name: Renommer l'APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk MyControl.apk
+
+      # Artifact téléchargeable depuis l'onglet Actions (comme avant)
       - uses: actions/upload-artifact@v4
         with:
           name: MyControl-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: MyControl.apk
+
+      # Release "latest" : lien de téléchargement direct, pratique sur téléphone
+      - name: Publier la Release "latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Dernière version
+          body: |
+            Dernier APK compilé automatiquement à partir de la branche `main`.
+            Télécharge **MyControl.apk** ci-dessous et installe-le sur le téléphone.
+          files: MyControl.apk
+          make_latest: true

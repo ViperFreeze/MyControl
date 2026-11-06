@@ -183,10 +183,14 @@ class MainActivity : Activity() {
             }
 
             Phase.ATTENTE -> {
-                val min = Securite.attenteRestanteMs(this) / 60_000 + 1
+                val reste = Securite.attenteRestanteMs(this)
+                val h = reste / 3_600_000
+                val min = (reste % 3_600_000) / 60_000 + 1
+                val dans = if (h > 0) getString(R.string.duree_h_min, h, min)
+                           else getString(R.string.duree_min, min)
                 carte(
                     getString(R.string.attente_etiquette), "⏳", getString(R.string.attente_titre),
-                    getString(R.string.attente_detail, min), null, null
+                    getString(R.string.attente_detail, dans), null, null
                 )
                 secondaire(getString(R.string.bouton_annuler)) {
                     Securite.annulerDemande(this); rafraichir()

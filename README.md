@@ -13,11 +13,11 @@ Aucune donnée n'est stockée (à part un compteur de blocages) ni envoyée.
 
 ## Protection anti-désactivation
 
-La protection se **verrouille** d'un bouton. Une fois verrouillée, elle ne peut plus être levée facilement : la seule sortie est de **désinstaller** l'appli, et pour ça il faut passer par un **délai de 10 minutes**.
+La protection se **verrouille** d'un bouton. Une fois verrouillée, elle ne peut plus être levée facilement : la seule sortie est de **désinstaller** l'appli, et pour ça il faut un code qui n'est disponible **qu'entre 4h et 5h du matin**.
 
 - Tant que la protection est verrouillée, le service **bloque les écrans** permettant d'arrêter MyControl : page du service d'accessibilité, infos de l'appli (Forcer l'arrêt, Effacer les données, Désinstaller), fenêtre de désinstallation, page Play Store, retrait de l'administrateur.
 - **Administrateur de l'appareil** : empêche la désinstallation tant qu'il est actif.
-- **Désactivation volontaire** : bouton « Demander la désactivation » → attente **incompressible de 10 min** → un **code à 6 chiffres** s'affiche → une fois saisi, une fenêtre de 5 min s'ouvre pour retirer l'administrateur et désinstaller. Ensuite la protection se réarme.
+- **Désactivation volontaire** : bouton « Demander la désactivation » → le **code à 6 chiffres** ne s'affiche **qu'entre 4h et 5h du matin** (et au moins 10 min après la demande ; passé 5h, il faut attendre le lendemain) → une fois saisi, une fenêtre de 5 min s'ouvre pour retirer l'administrateur et désinstaller. Ensuite la protection se réarme.
 
 Le délai n'est pas raccourcissable depuis l'appli : il repose sur l'horloge, et avancer l'heure du téléphone ne fait que rendre le code disponible plus tôt… mais passe aussi par l'écran de réglages, lui-même bloqué.
 
@@ -56,3 +56,6 @@ Tout est dans `app/src/main/java/fr/axel/mycontrol/Detection.kt` :
 - La protection freine fortement la désactivation mais n'est pas inviolable (mode sans échec, ADB, réinitialisation). Pour un contrôle parental solide, combiner avec Google Family Link.
 - Les navigateurs changent leurs libellés au fil des versions : teste chaque navigateur et ajoute des mots-clés si besoin.
 - Les navigateurs « tout privé » (DuckDuckGo, Firefox Focus, Tor Browser…) ne sont pas couverts : il faut les désinstaller ou les bloquer via Family Link.
+
+
+**Anti-triche horaire** : l'heure du créneau est recalculée à partir du chronomètre interne du téléphone (non réglable) et du fuseau figé au moment de la demande, donc changer l'heure ou le fuseau ne fait pas apparaître le code. Un redémarrage annule la demande en cours.

@@ -70,7 +70,9 @@ object Detection {
         "firefox efface votre historique",         // Firefox FR (accueil privé)
         "firefox clears your search and browsing", // Firefox EN
         "mode secret activé",                      // Samsung Internet
+        "mode secret est activé",                  // Samsung Internet (variante FR)
         "secret mode is on",
+        "turn on secret mode",                     // écran d'intro Samsung
     )
 
     /** Fragments d'identifiants de vues propres au mode privé. */
@@ -81,6 +83,11 @@ object Detection {
         "new_tab_incognito",
         "inprivate",
         "private_browsing_description",
+        // Samsung Internet (mode Secret)
+        "secret_mode",
+        "secret_mode_description",
+        "secret_mode_intro",
+        "secret_mode_guide",
     )
 
     /** Mots qui signalent un bouton/bascule présent aussi en mode normal → ignorés pour l'écran. */

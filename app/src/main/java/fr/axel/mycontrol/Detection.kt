@@ -1,15 +1,29 @@
 package fr.axel.mycontrol
 
+import android.content.Context
+import org.json.JSONObject
 import java.util.Locale
 
 /**
- * Règles de détection. Si un navigateur passe entre les mailles
- * (nouvelle version, autre langue), c'est ici qu'il faut ajouter des mots-clés.
+ * Règles de détection.
+ *
+ * Deux sources se cumulent :
+ *  - les listes « de base » ci-dessous, intégrées à l'APK (filet de sécurité,
+ *    toujours actives même sans réseau) ;
+ *  - les listes « distantes », téléchargées par [MiseAJour] depuis
+ *    detection.json sur GitHub et mises en cache. Elles s'AJOUTENT à la base,
+ *    ce qui permet d'ajouter un navigateur ou un libellé sans réinstaller
+ *    l'appli : il suffit d'éditer detection.json sur le dépôt.
+ *
+ * Si le fichier distant est injoignable ou invalide, seules les listes de
+ * base s'appliquent.
  */
 object Detection {
 
-    /** Navigateurs surveillés (garder synchronisé avec accessibility_config.xml). */
-    val NAVIGATEURS = setOf(
+    // --- Listes de base (intégrées à l'APK) -------------------------------
+
+    /** Navigateurs surveillés. */
+    private val NAVIGATEURS_BASE = setOf(
         "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
         "com.microsoft.emmx",
         "com.brave.browser",
@@ -23,7 +37,7 @@ object Detection {
     )
 
     /** Applis système d'où l'on peut désactiver ou désinstaller MyControl. */
-    val PAQUETS_REGLAGES = setOf(
+    private val PAQUETS_REGLAGES_BASE = setOf(
         "com.android.settings",                // Réglages (Pixel, Samsung, la plupart)
         "com.samsung.accessibility",           // Accessibilité Samsung
         "com.miui.securitycenter",             // Infos appli Xiaomi
@@ -32,22 +46,8 @@ object Detection {
         "com.android.vending",                 // Bouton Désinstaller du Play Store
     )
 
-    /** Mots qui, avec « MyControl » à l'écran, signalent un écran sensible. */
-    private val MOTS_REGLAGES = listOf(
-        "désinstaller", "uninstall",
-        "forcer l'arrêt", "force stop", "arrêt forcé",
-        "désactiver", "deactivate", "turn off",
-        "utiliser mycontrol", "use mycontrol",
-        "effacer les données", "clear data", "vider le stockage", "clear storage",
-    )
-
-    fun estEcranReglagesSensible(texteEcran: String): Boolean {
-        val t = normaliser(texteEcran) ?: return false
-        return t.contains("mycontrol") && MOTS_REGLAGES.any { t.contains(it) }
-    }
-
     /** Un clic sur un élément contenant ces mots ouvre (presque toujours) le mode privé. */
-    private val MOTS_CLIC = listOf(
+    private val MOTS_CLIC_BASE = listOf(
         "privé",          // « Nouvel onglet de navigation privée », « Onglets privés »
         "private",        // « New private tab », « Private browsing »
         "incognito",
@@ -57,7 +57,7 @@ object Detection {
     )
 
     /** Phrases visibles seulement quand on est DANS un onglet privé. */
-    private val PHRASES_ECRAN = listOf(
+    private val PHRASES_ECRAN_BASE = listOf(
         "vous êtes en navigation privée",          // Chrome / Brave FR
         "gone incognito",                          // Chrome EN « You've gone Incognito »
         "navigation inprivate",                    // Edge FR
@@ -76,7 +76,7 @@ object Detection {
     )
 
     /** Fragments d'identifiants de vues propres au mode privé. */
-    private val IDS_ECRAN = listOf(
+    private val IDS_ECRAN_BASE = listOf(
         "incognito_badge",
         "incognito_ntp",
         "incognito_description",
@@ -90,25 +90,82 @@ object Detection {
         "secret_mode_guide",
     )
 
+    /** Applis système : NON mises à jour à distance (écrans anti-désactivation sensibles). */
+    val PAQUETS_REGLAGES: Set<String> get() = PAQUETS_REGLAGES_BASE
+
+    /** Mots qui, avec « MyControl » à l'écran, signalent un écran sensible. */
+    private val MOTS_REGLAGES = listOf(
+        "désinstaller", "uninstall",
+        "forcer l'arrêt", "force stop", "arrêt forcé",
+        "désactiver", "deactivate", "turn off",
+        "utiliser mycontrol", "use mycontrol",
+        "effacer les données", "clear data", "vider le stockage", "clear storage",
+    )
+
     /** Mots qui signalent un bouton/bascule présent aussi en mode normal → ignorés pour l'écran. */
     private val IDS_EXCLUS = listOf("toggle", "switch", "button", "menu", "tab_switcher")
+
+    // --- Listes effectives (base + distant), précalculées une seule fois ---
+    // Recalculées uniquement dans chargerDistant(), pas à chaque événement :
+    // onAccessibilityEvent est un chemin très chaud (toutes les applis).
+
+    @Volatile private var navigateurs: Set<String> = NAVIGATEURS_BASE
+    @Volatile private var motsClic: List<String> = MOTS_CLIC_BASE
+    @Volatile private var phrasesEcran: List<String> = PHRASES_ECRAN_BASE
+    @Volatile private var idsEcran: List<String> = IDS_ECRAN_BASE
+
+    val NAVIGATEURS: Set<String> get() = navigateurs
+
+    /**
+     * Applique la config distante mise en cache par [MiseAJour].
+     * Tolérant : une clé absente ou malformée est simplement ignorée, les
+     * listes de base restant actives.
+     */
+    fun chargerDistant(contexte: Context) {
+        val json = MiseAJour.jsonEnCache(contexte) ?: return
+        try {
+            val o = JSONObject(json)
+            navigateurs = NAVIGATEURS_BASE + lireListe(o, "navigateurs")
+            motsClic = MOTS_CLIC_BASE + lireListe(o, "mots_clic").map { it.lowercase(Locale.ROOT) }
+            phrasesEcran = PHRASES_ECRAN_BASE + lireListe(o, "phrases_ecran").map { it.lowercase(Locale.ROOT) }
+            idsEcran = IDS_ECRAN_BASE + lireListe(o, "ids_ecran").map { it.lowercase(Locale.ROOT) }
+        } catch (_: Exception) {
+            // JSON invalide : on garde la base + ce qui était déjà chargé.
+        }
+    }
+
+    private fun lireListe(o: JSONObject, cle: String): List<String> {
+        val arr = o.optJSONArray(cle) ?: return emptyList()
+        val sortie = ArrayList<String>(arr.length())
+        for (i in 0 until arr.length()) {
+            arr.optString(i, null)?.takeIf { it.isNotBlank() }?.let { sortie.add(it) }
+        }
+        return sortie
+    }
+
+    // --- Détection --------------------------------------------------------
 
     private fun normaliser(texte: CharSequence?): String? =
         texte?.toString()?.lowercase(Locale.ROOT)?.replace('’', '\'')
 
+    fun estEcranReglagesSensible(texteEcran: String): Boolean {
+        val t = normaliser(texteEcran) ?: return false
+        return t.contains("mycontrol") && MOTS_REGLAGES.any { t.contains(it) }
+    }
+
     fun estClicPrive(texte: CharSequence?): Boolean {
         val t = normaliser(texte) ?: return false
-        return MOTS_CLIC.any { t.contains(it) }
+        return motsClic.any { t.contains(it) }
     }
 
     fun estPhraseEcranPrive(texte: CharSequence?): Boolean {
         val t = normaliser(texte) ?: return false
-        return PHRASES_ECRAN.any { t.contains(it) }
+        return phrasesEcran.any { t.contains(it) }
     }
 
     fun estIdEcranPrive(id: String?): Boolean {
         val t = normaliser(id) ?: return false
         if (IDS_EXCLUS.any { t.contains(it) }) return false
-        return IDS_ECRAN.any { t.contains(it) }
+        return idsEcran.any { t.contains(it) }
     }
 }

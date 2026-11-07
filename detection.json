@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "_doc": "Config de détection de MyControl, chargée à distance par l'appli (aucune réinstallation nécessaire). Édite ce fichier sur GitHub : le téléphone le récupère automatiquement et l'ajoute aux listes de base intégrées à l'appli. Les listes de base servent de filet de sécurité si ce fichier est injoignable ou invalide.",
+  "navigateurs": [
+    "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
+    "com.microsoft.emmx",
+    "com.brave.browser",
+    "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix",
+    "com.sec.android.app.sbrowser",
+    "com.opera.browser", "com.opera.gx", "com.opera.mini.native",
+    "com.vivaldi.browser",
+    "com.kiwibrowser.browser",
+    "com.mi.globalbrowser",
+    "com.huawei.browser"
+  ],
+  "mots_clic": [
+    "privé", "private", "incognito", "inprivate", "mode secret", "secret mode"
+  ],
+  "phrases_ecran": [
+    "vous êtes en navigation privée",
+    "gone incognito",
+    "navigation inprivate",
+    "inprivate browsing",
+    "browsing inprivate",
+    "vous naviguez en mode privé",
+    "fenêtre de navigation privée",
+    "private window with tor",
+    "fenêtre privée avec tor",
+    "firefox efface votre historique",
+    "firefox clears your search and browsing",
+    "mode secret activé",
+    "mode secret est activé",
+    "secret mode is on",
+    "turn on secret mode"
+  ],
+  "ids_ecran": [
+    "incognito_badge",
+    "incognito_ntp",
+    "incognito_description",
+    "new_tab_incognito",
+    "inprivate",
+    "private_browsing_description",
+    "secret_mode",
+    "secret_mode_description",
+    "secret_mode_intro",
+    "secret_mode_guide"
+  ]
+}

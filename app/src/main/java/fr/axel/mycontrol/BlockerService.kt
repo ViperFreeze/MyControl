@@ -27,6 +27,12 @@ class BlockerService : AccessibilityService() {
     private var dernierBlocageReglages = 0L
     private var dernierScanReglages = 0L
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        // Applique le cache et déclenche une mise à jour distante si besoin.
+        MiseAJour.planifier(this)
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val paquet = event.packageName?.toString() ?: return
 

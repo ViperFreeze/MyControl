@@ -47,10 +47,19 @@ MyControl s'installe via un APK (hors Play Store), donc Android peut afficher «
 En revanche, soyons clairs : une appli qui **combine un service d'accessibilité, l'administrateur d'appareil et le blocage de sa propre désinstallation** correspond au profil que Google Play Protect surveille de près (c'est aussi le profil des logiciels de contrôle abusifs). Ce comportement ne peut pas être « caché » sans retirer ces fonctions. Les libellés de l'appli sont donc volontairement explicites et transparents, et aucune donnée n'est collectée ni envoyée. Si Play Protect affiche une alerte, elle reste contournable par l'utilisateur, mais le risque ne peut pas être ramené à zéro tant que la protection forte est conservée.
 
 ## Ajuster la détection
-Tout est dans `app/src/main/java/fr/axel/mycontrol/Detection.kt` :
-- `MOTS_CLIC` : mots qui bloquent un clic ;
-- `PHRASES_ECRAN` / `IDS_ECRAN` : signes qu'un onglet privé est affiché ;
-- `NAVIGATEURS` : paquets surveillés (à synchroniser avec `res/xml/accessibility_config.xml`).
+
+### Sans réinstaller (recommandé) : `detection.json`
+Les règles peuvent être mises à jour **à distance**, sans recompiler ni réinstaller l'APK. Il suffit d'éditer `detection.json` à la racine du dépôt :
+- `navigateurs` : paquets de navigateurs surveillés ;
+- `mots_clic` : mots qui bloquent un clic ;
+- `phrases_ecran` / `ids_ecran` : signes qu'un onglet privé est affiché.
+
+Le téléphone récupère ce fichier au démarrage du service (et au plus une fois toutes les 6 h), le met en cache et l'**ajoute** aux listes de base intégrées à l'appli. Si le fichier est injoignable ou invalide, seules les listes de base s'appliquent — la détection n'est jamais interrompue. Comme le service n'est plus limité à une liste figée de paquets, un navigateur ajouté dans `detection.json` est pris en compte sans nouvelle installation.
+
+Pour forcer une mise à jour immédiate : couper puis réactiver le service d'accessibilité de MyControl.
+
+### Dans le code (listes de base)
+Les valeurs par défaut, qui servent de filet de sécurité, sont dans `app/src/main/java/fr/axel/mycontrol/Detection.kt` (`NAVIGATEURS_BASE`, `MOTS_CLIC_BASE`, `PHRASES_ECRAN_BASE`, `IDS_ECRAN_BASE`).
 
 ## Limites
 - La protection freine fortement la désactivation mais n'est pas inviolable (mode sans échec, ADB, réinitialisation). Pour un contrôle parental solide, combiner avec Google Family Link.

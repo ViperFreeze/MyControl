@@ -13,6 +13,11 @@
     "com.mi.globalbrowser",
     "com.huawei.browser"
   ],
+  "applis_bloquees": [
+    "com.sec.android.app.sbrowser",
+    "com.sec.android.app.sbrowser.beta",
+    "com.sec.android.app.sbrowser.lite"
+  ],
   "mots_clic": [
     "privé", "private", "incognito", "inprivate", "mode secret", "secret mode"
   ],

@@ -17,12 +17,18 @@ import java.util.ArrayDeque
  *     on fait Retour immédiatement.
  *  2. Écran détecté : si un onglet privé est quand même affiché
  *     (page d'accueil privée, badge incognito…), on renvoie à l'écran d'accueil.
+ *
+ * Et un blocage total : les applis de Detection.APPLIS_BLOQUEES (Samsung
+ * Internet) sont refermées dès qu'elles s'affichent, y compris quand une autre
+ * appli ouvre un lien dedans.
  */
 class BlockerService : AccessibilityService() {
 
     private var dernierBlocageClic = 0L
     private var dernierBlocageEcran = 0L
     private var dernierScan = 0L
+
+    private var dernierBlocageAppli = 0L
 
     private var dernierBlocageReglages = 0L
     private var dernierScanReglages = 0L
@@ -38,6 +44,10 @@ class BlockerService : AccessibilityService() {
 
         if (paquet in Detection.PAQUETS_REGLAGES) {
             surveillerReglages(event)
+            return
+        }
+        if (paquet in Detection.APPLIS_BLOQUEES) {
+            surveillerAppliBloquee(event, paquet)
             return
         }
         if (paquet !in Detection.NAVIGATEURS) return
@@ -107,6 +117,30 @@ class BlockerService : AccessibilityService() {
         performGlobalAction(GLOBAL_ACTION_BACK)
         performGlobalAction(GLOBAL_ACTION_HOME)
         signaler()
+    }
+
+    // --- Blocage total (Samsung Internet) ----------------------------------
+
+    private fun surveillerAppliBloquee(event: AccessibilityEvent, paquet: String) {
+        when (event.eventType) {
+            // Ouverture d'une fenêtre de l'appli : blocage immédiat.
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> bloquerAppli()
+            // Changement de contenu : on vérifie que l'appli est bien au
+            // premier plan (pas une simple mise à jour en arrière-plan).
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
+                val auPremierPlan = rootInActiveWindow?.packageName?.toString()
+                if (auPremierPlan == paquet) bloquerAppli()
+            }
+        }
+    }
+
+    private fun bloquerAppli() {
+        val maintenant = SystemClock.elapsedRealtime()
+        if (maintenant - dernierBlocageAppli < 1500) return
+        dernierBlocageAppli = maintenant
+        performGlobalAction(GLOBAL_ACTION_HOME)
+        Stats.incrementer(this)
+        Toast.makeText(this, R.string.toast_appli_bloquee, Toast.LENGTH_SHORT).show()
     }
 
     // --- Anti-désactivation ------------------------------------------------

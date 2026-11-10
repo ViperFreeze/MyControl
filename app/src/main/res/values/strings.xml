@@ -59,6 +59,7 @@
 
     <!-- Toasts -->
     <string name="toast_bloque">Navigation privée bloquée par MyControl</string>
+    <string name="toast_appli_bloquee">Samsung Internet est bloqué par MyControl. Utilise un autre navigateur.</string>
     <string name="toast_armee">Protection verrouillée. Tout est en place.</string>
     <string name="toast_deverrouille">Déverrouillé 5 minutes. Tu peux désinstaller.</string>
     <string name="toast_code_faux">Code incorrect.</string>
@@ -74,5 +75,5 @@
     <string name="admin_avertissement">Désactiver cette protection permettra de désinstaller MyControl.</string>
 
     <!-- Aide -->
-    <string name="aide">• Si l\'option d\'accessibilité est grisée (Android 13+) : Paramètres → Applications → MyControl → menu ⋮ → « Autoriser les paramètres restreints ».\n\n• À l\'installation, si le téléphone affiche un avertissement « application non vérifiée », choisis « Installer quand même » : l\'appli vient d\'un APK et non du Play Store.\n\n• Pour désinstaller : « Demander la désactivation », attends le créneau de 4h à 5h du matin, entre le code, puis « Désinstaller ».\n\n• En cas de blocage (code perdu, bug) : redémarre le téléphone en mode sans échec, les services d\'accessibilité y sont coupés le temps de retirer l\'appli.\n\nNavigateurs surveillés : Chrome, Edge, Brave, Firefox, Samsung Internet, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.</string>
+    <string name="aide">• Si l\'option d\'accessibilité est grisée (Android 13+) : Paramètres → Applications → MyControl → menu ⋮ → « Autoriser les paramètres restreints ».\n\n• À l\'installation, si le téléphone affiche un avertissement « application non vérifiée », choisis « Installer quand même » : l\'appli vient d\'un APK et non du Play Store.\n\n• Pour désinstaller : « Demander la désactivation », attends le créneau de 4h à 5h du matin, entre le code, puis « Désinstaller ».\n\n• En cas de blocage (code perdu, bug) : redémarre le téléphone en mode sans échec, les services d\'accessibilité y sont coupés le temps de retirer l\'appli.\n\nNavigateurs surveillés : Chrome, Edge, Brave, Firefox, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.\n\nSamsung Internet est bloqué en entier : choisis un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur), sinon les liens ouverts depuis d\'autres applis seront refermés.</string>
 </resources>

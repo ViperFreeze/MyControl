@@ -36,6 +36,17 @@ object Detection {
         "com.huawei.browser",
     )
 
+    /**
+     * Applis bloquées EN ENTIER : dès qu'elles passent au premier plan, on
+     * renvoie à l'écran d'accueil. Samsung Internet est bloqué complètement
+     * car son mode Secret est difficile à détecter de façon fiable.
+     */
+    private val APPLIS_BLOQUEES_BASE = setOf(
+        "com.sec.android.app.sbrowser",        // Samsung Internet
+        "com.sec.android.app.sbrowser.beta",   // Samsung Internet Beta
+        "com.sec.android.app.sbrowser.lite",   // Samsung Internet Lite
+    )
+
     /** Applis système d'où l'on peut désactiver ou désinstaller MyControl. */
     private val PAQUETS_REGLAGES_BASE = setOf(
         "com.android.settings",                // Réglages (Pixel, Samsung, la plupart)
@@ -113,8 +124,15 @@ object Detection {
     @Volatile private var motsClic: List<String> = MOTS_CLIC_BASE
     @Volatile private var phrasesEcran: List<String> = PHRASES_ECRAN_BASE
     @Volatile private var idsEcran: List<String> = IDS_ECRAN_BASE
+    @Volatile private var applisBloquees: Set<String> = APPLIS_BLOQUEES_BASE
 
     val NAVIGATEURS: Set<String> get() = navigateurs
+
+    /**
+     * Applis bloquées en entier. La base ne peut pas être retirée à distance :
+     * detection.json peut seulement AJOUTER des applis (clé « applis_bloquees »).
+     */
+    val APPLIS_BLOQUEES: Set<String> get() = applisBloquees
 
     /**
      * Applique la config distante mise en cache par [MiseAJour].
@@ -129,6 +147,10 @@ object Detection {
             motsClic = MOTS_CLIC_BASE + lireListe(o, "mots_clic").map { it.lowercase(Locale.ROOT) }
             phrasesEcran = PHRASES_ECRAN_BASE + lireListe(o, "phrases_ecran").map { it.lowercase(Locale.ROOT) }
             idsEcran = IDS_ECRAN_BASE + lireListe(o, "ids_ecran").map { it.lowercase(Locale.ROOT) }
+            // Jamais d'appli système de réglages ni MyControl lui-même : ce
+            // serait un moyen de se bloquer hors du téléphone.
+            applisBloquees = APPLIS_BLOQUEES_BASE + lireListe(o, "applis_bloquees")
+                .filter { it !in PAQUETS_REGLAGES_BASE && it != contexte.packageName }
         } catch (_: Exception) {
             // JSON invalide : on garde la base + ce qui était déjà chargé.
         }

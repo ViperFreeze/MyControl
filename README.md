@@ -23,7 +23,9 @@ Le délai n'est pas raccourcissable depuis l'appli : il repose sur l'horloge, et
 
 En dernier recours (code perdu, bug) : redémarrer en **mode sans échec** coupe les services d'accessibilité tiers, ce qui permet de retirer l'administrateur et de désinstaller.
 
-Navigateurs : Chrome, Edge, Brave, Firefox, Samsung Internet, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
+Navigateurs : Chrome, Edge, Brave, Firefox, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
+
+**Samsung Internet est bloqué en entier** (ainsi que ses versions Beta et Lite) : dès qu'il s'ouvre, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Pense à choisir un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur). D'autres applis peuvent être bloquées en entier sans réinstaller en les ajoutant à `applis_bloquees` dans `detection.json`.
 
 ## Obtenir l'APK
 

@@ -47,6 +47,8 @@ class MainActivity : Activity() {
     private lateinit var boutonPrincipal: Button
     private lateinit var boutonSecondaire: Button
     private lateinit var lienAide: TextView
+    private lateinit var majStatut: TextView
+    private lateinit var majBouton: Button
 
     private val dpm by lazy { getSystemService(DevicePolicyManager::class.java) }
     private val admin by lazy { ComponentName(this, AdminReceiver::class.java) }
@@ -117,6 +119,39 @@ class MainActivity : Activity() {
             .forEach { carte.addView(it) }
         racine.addView(carte)
 
+        // --- Mises à jour (sans désinstaller, sans code) ---
+        val carteMaj = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(px(22), px(18), px(22), px(18))
+            background = GradientDrawable().apply {
+                cornerRadius = px(20).toFloat()
+                setColor(Color.rgb(245, 247, 250))
+            }
+            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = px(16) }
+        }
+        carteMaj.addView(TextView(this).apply {
+            text = getString(R.string.maj_section)
+            textSize = 12.5f
+            setTypeface(typeface, Typeface.BOLD)
+            letterSpacing = 0.05f
+            setTextColor(GRIS)
+        })
+        carteMaj.addView(TextView(this).apply {
+            text = getString(R.string.maj_version, MajAppli.versionNom(this@MainActivity))
+            textSize = 15f
+            setPadding(0, px(6), 0, 0)
+        })
+        majStatut = TextView(this).apply {
+            textSize = 14f
+            setTextColor(GRIS)
+            setPadding(0, px(4), 0, px(12))
+            setLineSpacing(px(2).toFloat(), 1f)
+        }
+        majBouton = Button(this).apply { layoutParams = LinearLayout.LayoutParams(MATCH, WRAP) }
+        carteMaj.addView(majStatut)
+        carteMaj.addView(majBouton)
+        racine.addView(carteMaj)
+
         // --- Compteur de blocages ---
         carteCompteur = TextView(this).apply {
             textSize = 15f
@@ -139,7 +174,11 @@ class MainActivity : Activity() {
         setContentView(ScrollView(this).apply { addView(racine) })
     }
 
-    override fun onResume() { super.onResume(); handler.post(tic) }
+    override fun onResume() {
+        super.onResume()
+        handler.post(tic)
+        MajAppli.verifier(this) { rafraichir() }
+    }
     override fun onPause() { super.onPause(); handler.removeCallbacks(tic) }
 
     // --- Cœur : calcul de la phase et mise à jour de la carte --------------
@@ -217,6 +256,53 @@ class MainActivity : Activity() {
         val actif = p != Phase.SERVICE_OFF
         carteCompteur.visibility = if (actif) View.VISIBLE else View.GONE
         carteCompteur.text = getString(R.string.compteur, Stats.lire(this))
+        rafraichirMaj()
+    }
+
+    private fun rafraichirMaj() {
+        val dispo = MajAppli.versionDisponible(this)
+        when {
+            MajAppli.etat == MajAppli.Etat.EN_COURS -> {
+                majStatut.text = getString(R.string.maj_en_cours)
+                majBouton.visibility = View.GONE
+            }
+            dispo > 0 && !MajAppli.autorisee(this) -> {
+                majStatut.text = getString(R.string.maj_autoriser)
+                bouton(majBouton, getString(R.string.maj_bouton_autoriser)) {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                            android.net.Uri.parse("package:$packageName")
+                        )
+                    )
+                }
+            }
+            dispo > 0 -> {
+                majStatut.text = getString(R.string.maj_disponible, dispo)
+                bouton(majBouton, getString(R.string.maj_bouton_installer)) {
+                    MajAppli.lancer(this) { rafraichir() }
+                    rafraichir()
+                }
+            }
+            else -> {
+                majStatut.text = getString(
+                    when (MajAppli.etat) {
+                        MajAppli.Etat.A_JOUR -> R.string.maj_a_jour
+                        MajAppli.Etat.ERREUR -> R.string.maj_erreur
+                        else -> R.string.maj_inconnu
+                    }
+                )
+                bouton(majBouton, getString(R.string.maj_bouton_chercher)) {
+                    MajAppli.verifier(this, force = true, installerSiSilencieux = false) { rafraichir() }
+                }
+            }
+        }
+    }
+
+    private fun bouton(b: Button, libelle: String, action: () -> Unit) {
+        b.visibility = View.VISIBLE
+        b.text = libelle
+        b.setOnClickListener { action() }
     }
 
     private fun carte(

@@ -3,6 +3,8 @@ name: Compiler l'APK
 on:
   push:
     branches: [main]
+  # Sur une pull request : on compile seulement (vérification), sans publier.
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -23,11 +25,31 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      # Clé de signature fixe : sans elle, impossible de mettre à jour
+      # l'appli sans la désinstaller.
+      - name: Préparer la clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MYCONTROL_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "::warning::Pas de clé : compilation de vérification avec une clé temporaire"; exit 0
+            fi
+            echo "::error::Secret MYCONTROL_KEYSTORE_BASE64 manquant (voir README)"; exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/mycontrol.jks"
+          echo "MYCONTROL_KEYSTORE=$RUNNER_TEMP/mycontrol.jks" >> "$GITHUB_ENV"
+
       - name: Compiler
+        env:
+          MYCONTROL_KEYSTORE_PASSWORD: ${{ secrets.MYCONTROL_KEYSTORE_PASSWORD }}
         run: gradle assembleDebug
 
       - name: Renommer l'APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk MyControl.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk MyControl.apk
+          # Lu par l'appli pour savoir si une nouvelle version existe.
+          echo "$GITHUB_RUN_NUMBER" > version.txt
 
       # Artifact téléchargeable depuis l'onglet Actions (comme avant)
       - uses: actions/upload-artifact@v4
@@ -37,6 +59,7 @@ jobs:
 
       # Release "latest" : lien de téléchargement direct, pratique sur téléphone
       - name: Publier la Release "latest"
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
@@ -44,5 +67,7 @@ jobs:
           body: |
             Dernier APK compilé automatiquement à partir de la branche `main`.
             Télécharge **MyControl.apk** ci-dessous et installe-le sur le téléphone.
-          files: MyControl.apk
+          files: |
+            MyControl.apk
+            version.txt
           make_latest: true

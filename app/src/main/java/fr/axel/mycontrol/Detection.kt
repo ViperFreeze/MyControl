@@ -101,6 +101,12 @@ object Detection {
         "secret_mode_guide",
     )
 
+    /** Fenêtres d'installation d'Android (utilisées par les mises à jour de MyControl). */
+    val PAQUETS_INSTALLATEUR = setOf(
+        "com.google.android.packageinstaller",
+        "com.android.packageinstaller",
+    )
+
     /** Applis système : NON mises à jour à distance (écrans anti-désactivation sensibles). */
     val PAQUETS_REGLAGES: Set<String> get() = PAQUETS_REGLAGES_BASE
 
@@ -173,6 +179,12 @@ object Detection {
     fun estEcranReglagesSensible(texteEcran: String): Boolean {
         val t = normaliser(texteEcran) ?: return false
         return t.contains("mycontrol") && MOTS_REGLAGES.any { t.contains(it) }
+    }
+
+    /** Le texte parle-t-il de désinstallation (et pas seulement de mise à jour) ? */
+    fun parleDeDesinstallation(texteEcran: String): Boolean {
+        val t = normaliser(texteEcran) ?: return false
+        return t.contains("désinstaller") || t.contains("uninstall")
     }
 
     fun estClicPrive(texte: CharSequence?): Boolean {

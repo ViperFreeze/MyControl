@@ -29,6 +29,7 @@ class BlockerService : AccessibilityService() {
     private var dernierScan = 0L
 
     private var dernierBlocageAppli = 0L
+    private var dernierCheckMaj = 0L
 
     private var dernierBlocageReglages = 0L
     private var dernierScanReglages = 0L
@@ -37,10 +38,21 @@ class BlockerService : AccessibilityService() {
         super.onServiceConnected()
         // Applique le cache et déclenche une mise à jour distante si besoin.
         MiseAJour.planifier(this)
+        // Vérifie si une nouvelle version de l'appli existe (et l'installe
+        // en silence quand Android le permet).
+        MajAppli.verifier(this)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val paquet = event.packageName?.toString() ?: return
+
+        // Le service tourne en continu : on en profite pour vérifier les mises
+        // à jour de temps en temps (MajAppli limite lui-même à une fois / 6 h).
+        val t = SystemClock.elapsedRealtime()
+        if (t - dernierCheckMaj > 60 * 60_000L) {
+            dernierCheckMaj = t
+            MajAppli.verifier(this)
+        }
 
         if (paquet in Detection.PAQUETS_REGLAGES) {
             surveillerReglages(event)
@@ -158,7 +170,17 @@ class BlockerService : AccessibilityService() {
         texte.append(event.contentDescription ?: "").append(' ')
         rootInActiveWindow?.let { texte.append(texteDe(it)) }
 
-        if (Detection.estEcranReglagesSensible(texte.toString())) bloquerReglages()
+        val contenu = texte.toString()
+
+        // Mise à jour lancée par MyControl : la fenêtre « Mettre à jour cette
+        // appli ? » doit rester accessible. Une désinstallation, elle, reste
+        // toujours bloquée.
+        if (event.packageName?.toString() in Detection.PAQUETS_INSTALLATEUR &&
+            MajAppli.installationEnCours(this) &&
+            !Detection.parleDeDesinstallation(contenu)
+        ) return
+
+        if (Detection.estEcranReglagesSensible(contenu)) bloquerReglages()
     }
 
     /** Concatène tout le texte visible d'une fenêtre. */

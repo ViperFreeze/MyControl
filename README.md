@@ -70,3 +70,17 @@ Les valeurs par défaut, qui servent de filet de sécurité, sont dans `app/src/
 
 
 **Anti-triche horaire** : l'heure du créneau est recalculée à partir du chronomètre interne du téléphone (non réglable) et du fuseau figé au moment de la demande, donc changer l'heure ou le fuseau ne fait pas apparaître le code. Un redémarrage annule la demande en cours.
+
+
+## Mises à jour (sans désinstaller, sans code)
+
+MyControl se met à jour toute seule : elle vérifie la Release `latest` toutes les 6 h (et à chaque ouverture de l'appli), télécharge le nouvel APK et l'installe par-dessus elle-même. Le service d'accessibilité, l'administrateur et la protection verrouillée sont conservés : **aucun code de déverrouillage n'est nécessaire**. La première mise à jour demande d'autoriser MyControl à installer des applis puis d'appuyer sur « Mettre à jour » ; ensuite (Android 12+), c'est silencieux.
+
+Ça repose sur une **clé de signature fixe**, gardée dans les secrets du dépôt (Settings → Secrets and variables → Actions) :
+
+| Secret | Contenu |
+|---|---|
+| `MYCONTROL_KEYSTORE_BASE64` | le fichier `mycontrol.jks` encodé en base64 |
+| `MYCONTROL_KEYSTORE_PASSWORD` | le mot de passe de la clé |
+
+Garde une copie de la clé en lieu sûr : si elle est perdue, les futures versions ne pourront plus s'installer par-dessus l'ancienne (il faudrait désinstaller).

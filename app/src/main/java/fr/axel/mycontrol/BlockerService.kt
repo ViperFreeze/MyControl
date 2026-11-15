@@ -1,6 +1,7 @@
 package fr.axel.mycontrol
 
 import android.accessibilityservice.AccessibilityService
+import android.app.Notification
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -34,6 +35,10 @@ class BlockerService : AccessibilityService() {
     private var dernierBlocageReglages = 0L
     private var dernierScanReglages = 0L
 
+    /** Moment où un raccourci « Nouvel onglet privé » a été touché (lanceur…). */
+    private var lancementPriveDemande = 0L
+    private var dernierBlocageNotif = 0L
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         // Applique le cache et déclenche une mise à jour distante si besoin.
@@ -62,7 +67,35 @@ class BlockerService : AccessibilityService() {
             surveillerAppliBloquee(event, paquet)
             return
         }
-        if (paquet !in Detection.NAVIGATEURS) return
+        if (paquet !in Detection.NAVIGATEURS) {
+            // Raccourci de l'icône (appui long → « Nouvel onglet privé ») :
+            // le navigateur s'ouvrira directement en privé, on le referme dès
+            // qu'il apparaît.
+            if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED &&
+                paquet != packageName && clicLancementPrive(event)
+            ) {
+                lancementPriveDemande = SystemClock.elapsedRealtime()
+            }
+            return
+        }
+
+        if (event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
+            surveillerNotification(event)
+            return
+        }
+
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val maintenant = SystemClock.elapsedRealtime()
+            if (maintenant - lancementPriveDemande < 4000) {
+                lancementPriveDemande = 0L
+                bloquerEcran()
+                return
+            }
+            if (Detection.estActivitePrivee(event.className)) {
+                bloquerEcran()
+                return
+            }
+        }
 
         when (event.eventType) {
             AccessibilityEvent.TYPE_VIEW_CLICKED ->
@@ -91,6 +124,65 @@ class BlockerService : AccessibilityService() {
             morceaux.add(noeud.viewIdResourceName)
         }
         return morceaux.any { Detection.estClicPrive(it) }
+    }
+
+    private fun clicLancementPrive(event: AccessibilityEvent): Boolean {
+        val morceaux = mutableListOf<CharSequence?>()
+        morceaux.addAll(event.text)
+        morceaux.add(event.contentDescription)
+        event.source?.let { noeud ->
+            morceaux.add(noeud.text)
+            morceaux.add(noeud.contentDescription)
+        }
+        return morceaux.any { Detection.estLancementPrive(it) }
+    }
+
+    /**
+     * Brave (comme Chrome, Edge, Vivaldi…) affiche une notification
+     * « Fermer tous les onglets privés » dès qu'un onglet privé existe, même
+     * en arrière-plan. On déclenche son action : tous les onglets privés sont
+     * fermés d'un coup, quel que soit le chemin utilisé pour les ouvrir.
+     */
+    private fun surveillerNotification(event: AccessibilityEvent) {
+        val notif = event.parcelableData as? Notification
+        val texte = StringBuilder()
+        event.text.forEach { texte.append(it).append(' ') }
+        notif?.extras?.let { extras ->
+            texte.append(extras.getCharSequence(Notification.EXTRA_TITLE) ?: "").append(' ')
+            texte.append(extras.getCharSequence(Notification.EXTRA_TEXT) ?: "").append(' ')
+        }
+        notif?.actions?.forEach { texte.append(it.title ?: "").append(' ') }
+        if (!Detection.estNotifOngletsPrives(texte)) return
+
+        val maintenant = SystemClock.elapsedRealtime()
+        if (maintenant - dernierBlocageNotif < 1500) return
+        dernierBlocageNotif = maintenant
+
+        // L'intent principal de cette notification ferme les onglets privés ;
+        // on tente aussi le bouton d'action s'il y en a un.
+        val intents = buildList {
+            notif?.contentIntent?.let { add(it) }
+            notif?.actions?.forEach { a ->
+                if (Detection.estNotifOngletsPrives(a.title)) a.actionIntent?.let { add(it) }
+            }
+        }
+        var ferme = false
+        for (pi in intents) {
+            try {
+                pi.send()
+                ferme = true
+                break
+            } catch (_: Exception) {
+                // PendingIntent annulé ou refusé : on essaie le suivant.
+            }
+        }
+        // Si le navigateur est à l'écran, on en sort aussi.
+        val auPremierPlan = rootInActiveWindow?.packageName?.toString()
+        if (auPremierPlan in Detection.NAVIGATEURS) {
+            performGlobalAction(GLOBAL_ACTION_HOME)
+            ferme = true
+        }
+        if (ferme) signaler()
     }
 
     private fun ecranPriveAffiche(): Boolean {

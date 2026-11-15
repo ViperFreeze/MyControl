@@ -2,12 +2,21 @@
   "version": 1,
   "_doc": "Config de détection de MyControl, chargée à distance par l'appli (aucune réinstallation nécessaire). Édite ce fichier sur GitHub : le téléphone le récupère automatiquement et l'ajoute aux listes de base intégrées à l'appli. Les listes de base servent de filet de sécurité si ce fichier est injoignable ou invalide.",
   "navigateurs": [
-    "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
+    "com.android.chrome",
+    "com.chrome.beta",
+    "com.chrome.dev",
+    "com.chrome.canary",
     "com.microsoft.emmx",
     "com.brave.browser",
-    "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix",
+    "com.brave.browser_beta",
+    "com.brave.browser_nightly",
+    "org.mozilla.firefox",
+    "org.mozilla.firefox_beta",
+    "org.mozilla.fenix",
     "com.sec.android.app.sbrowser",
-    "com.opera.browser", "com.opera.gx", "com.opera.mini.native",
+    "com.opera.browser",
+    "com.opera.gx",
+    "com.opera.mini.native",
     "com.vivaldi.browser",
     "com.kiwibrowser.browser",
     "com.mi.globalbrowser",
@@ -19,7 +28,12 @@
     "com.sec.android.app.sbrowser.lite"
   ],
   "mots_clic": [
-    "privé", "private", "incognito", "inprivate", "mode secret", "secret mode"
+    "privé",
+    "private",
+    "incognito",
+    "inprivate",
+    "mode secret",
+    "secret mode"
   ],
   "phrases_ecran": [
     "vous êtes en navigation privée",
@@ -48,6 +62,18 @@
     "secret_mode",
     "secret_mode_description",
     "secret_mode_intro",
-    "secret_mode_guide"
+    "secret_mode_guide",
+    "private_ntp",
+    "private_tab_ntp"
+  ],
+  "lancements_prives": [
+    "nouvel onglet privé",
+    "new private tab",
+    "nouvel onglet de navigation privée",
+    "nouvel onglet navigation privée",
+    "new incognito tab",
+    "nouvel onglet incognito",
+    "new inprivate tab",
+    "nouvel onglet inprivate"
   ]
 }

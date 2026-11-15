@@ -26,7 +26,7 @@ object Detection {
     private val NAVIGATEURS_BASE = setOf(
         "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
         "com.microsoft.emmx",
-        "com.brave.browser",
+        "com.brave.browser", "com.brave.browser_beta", "com.brave.browser_nightly",
         "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix",
         "com.sec.android.app.sbrowser",
         "com.opera.browser", "com.opera.gx", "com.opera.mini.native",
@@ -99,6 +99,31 @@ object Detection {
         "secret_mode_description",
         "secret_mode_intro",
         "secret_mode_guide",
+        // Brave (page d'accueil des onglets privés)
+        "private_ntp",
+        "private_tab_ntp",
+    )
+
+    /**
+     * Libellés de LANCEMENT direct d'un onglet privé, reconnus dans N'IMPORTE
+     * quelle appli (surtout le lanceur : appui long sur l'icône de Brave →
+     * « Nouvel onglet privé »). Volontairement très précis pour éviter les
+     * faux positifs hors navigateur.
+     */
+    private val LANCEMENTS_PRIVES_BASE = listOf(
+        "nouvel onglet privé", "new private tab",
+        "nouvel onglet de navigation privée", "nouvel onglet navigation privée",
+        "new incognito tab", "nouvel onglet incognito",
+        "new inprivate tab", "nouvel onglet inprivate",
+    )
+
+    /**
+     * Notification « Fermer tous les onglets privés » que Brave (et Chrome,
+     * Edge, Vivaldi…) affichent tant qu'un onglet privé est ouvert. La
+     * déclencher ferme TOUS les onglets privés d'un coup.
+     */
+    private val MOTS_NOTIF_FERMER_BASE = listOf(
+        "fermer tous", "fermer les onglets", "close all",
     )
 
     /** Fenêtres d'installation d'Android (utilisées par les mises à jour de MyControl). */
@@ -131,6 +156,7 @@ object Detection {
     @Volatile private var phrasesEcran: List<String> = PHRASES_ECRAN_BASE
     @Volatile private var idsEcran: List<String> = IDS_ECRAN_BASE
     @Volatile private var applisBloquees: Set<String> = APPLIS_BLOQUEES_BASE
+    @Volatile private var lancementsPrives: List<String> = LANCEMENTS_PRIVES_BASE
 
     val NAVIGATEURS: Set<String> get() = navigateurs
 
@@ -155,6 +181,7 @@ object Detection {
             idsEcran = IDS_ECRAN_BASE + lireListe(o, "ids_ecran").map { it.lowercase(Locale.ROOT) }
             // Jamais d'appli système de réglages ni MyControl lui-même : ce
             // serait un moyen de se bloquer hors du téléphone.
+            lancementsPrives = LANCEMENTS_PRIVES_BASE + lireListe(o, "lancements_prives").map { it.lowercase(Locale.ROOT) }
             applisBloquees = APPLIS_BLOQUEES_BASE + lireListe(o, "applis_bloquees")
                 .filter { it !in PAQUETS_REGLAGES_BASE && it != contexte.packageName }
         } catch (_: Exception) {
@@ -201,5 +228,23 @@ object Detection {
         val t = normaliser(id) ?: return false
         if (IDS_EXCLUS.any { t.contains(it) }) return false
         return idsEcran.any { t.contains(it) }
+    }
+
+    /** Clic (hors navigateur) qui lance directement un onglet privé ? */
+    fun estLancementPrive(texte: CharSequence?): Boolean {
+        val t = normaliser(texte) ?: return false
+        return lancementsPrives.any { t.contains(it) }
+    }
+
+    /** Texte de la notification « Fermer tous les onglets privés » ? */
+    fun estNotifOngletsPrives(texte: CharSequence?): Boolean {
+        val t = normaliser(texte) ?: return false
+        return MOTS_NOTIF_FERMER_BASE.any { t.contains(it) } && motsClic.any { t.contains(it) }
+    }
+
+    /** Activité dédiée au mode privé (ex. IncognitoCustomTabActivity de Chromium/Brave). */
+    fun estActivitePrivee(nomClasse: CharSequence?): Boolean {
+        val t = normaliser(nomClasse) ?: return false
+        return t.contains("incognito") || t.contains("privatetab") || t.contains("privatebrowsing")
     }
 }

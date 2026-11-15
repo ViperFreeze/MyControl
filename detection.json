@@ -15,8 +15,11 @@
     "org.mozilla.fenix",
     "com.sec.android.app.sbrowser",
     "com.opera.browser",
+    "com.opera.browser.beta",
     "com.opera.gx",
     "com.opera.mini.native",
+    "com.opera.mini.native.beta",
+    "com.opera.touch",
     "com.vivaldi.browser",
     "com.kiwibrowser.browser",
     "com.mi.globalbrowser",
@@ -50,7 +53,12 @@
     "mode secret activé",
     "mode secret est activé",
     "secret mode is on",
-    "turn on secret mode"
+    "turn on secret mode",
+    "quitter le mode privé",
+    "leave private mode",
+    "exit private mode",
+    "browsing in private mode",
+    "navigation en mode privé"
   ],
   "ids_ecran": [
     "incognito_badge",
@@ -64,7 +72,10 @@
     "secret_mode_intro",
     "secret_mode_guide",
     "private_ntp",
-    "private_tab_ntp"
+    "private_tab_ntp",
+    "private_mode_ntp",
+    "private_mode_empty",
+    "private_tabs_empty"
   ],
   "lancements_prives": [
     "nouvel onglet privé",

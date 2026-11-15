@@ -29,7 +29,10 @@ object Detection {
         "com.brave.browser", "com.brave.browser_beta", "com.brave.browser_nightly",
         "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix",
         "com.sec.android.app.sbrowser",
-        "com.opera.browser", "com.opera.gx", "com.opera.mini.native",
+        "com.opera.browser", "com.opera.browser.beta",
+        "com.opera.gx",                        // Opera GX (navigateur gaming)
+        "com.opera.mini.native", "com.opera.mini.native.beta",
+        "com.opera.touch",
         "com.vivaldi.browser",
         "com.kiwibrowser.browser",
         "com.mi.globalbrowser",
@@ -84,6 +87,12 @@ object Detection {
         "mode secret est activé",                  // Samsung Internet (variante FR)
         "secret mode is on",
         "turn on secret mode",                     // écran d'intro Samsung
+        // Opera / Opera GX : options visibles seulement EN mode privé
+        "quitter le mode privé",
+        "leave private mode",
+        "exit private mode",
+        "browsing in private mode",                // « You are browsing in private mode »
+        "navigation en mode privé",
     )
 
     /** Fragments d'identifiants de vues propres au mode privé. */
@@ -102,6 +111,10 @@ object Detection {
         // Brave (page d'accueil des onglets privés)
         "private_ntp",
         "private_tab_ntp",
+        // Opera / Opera GX
+        "private_mode_ntp",
+        "private_mode_empty",
+        "private_tabs_empty",
     )
 
     /**
@@ -214,8 +227,26 @@ object Detection {
         return t.contains("désinstaller") || t.contains("uninstall")
     }
 
+    /** Mots de SORTIE du mode privé : ces clics ne doivent jamais être bloqués. */
+    private val MOTS_SORTIE = listOf("quitter", "leave", "exit", "fermer", "close")
+
     fun estClicPrive(texte: CharSequence?): Boolean {
         val t = normaliser(texte) ?: return false
+        if (MOTS_SORTIE.any { t.contains(it) }) return false
+        return motsClic.any { t.contains(it) }
+    }
+
+    /**
+     * Onglet « Privé » SÉLECTIONNÉ dans le gestionnaire d'onglets (Opera GX,
+     * Opera, Brave, Chrome…) : un libellé court, coché/sélectionné, qui n'est
+     * pas un interrupteur de réglage.
+     */
+    fun estOngletPriveSelectionne(texte: CharSequence?, nomClasse: CharSequence?): Boolean {
+        val t = normaliser(texte) ?: return false
+        if (t.length > 25) return false
+        val c = normaliser(nomClasse) ?: ""
+        if (c.contains("switch") || c.contains("checkbox")) return false
+        if (MOTS_SORTIE.any { t.contains(it) }) return false
         return motsClic.any { t.contains(it) }
     }
 

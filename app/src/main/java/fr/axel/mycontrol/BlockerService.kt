@@ -199,6 +199,11 @@ class BlockerService : AccessibilityService() {
                 Detection.estPhraseEcranPrive(noeud.text) ||
                 Detection.estPhraseEcranPrive(noeud.contentDescription)
             ) return true
+            // Onglet « Privé » actif dans le gestionnaire d'onglets (Opera GX…)
+            if ((noeud.isSelected || noeud.isChecked) &&
+                (Detection.estOngletPriveSelectionne(noeud.text, noeud.className) ||
+                    Detection.estOngletPriveSelectionne(noeud.contentDescription, noeud.className))
+            ) return true
             for (i in 0 until noeud.childCount) {
                 noeud.getChild(i)?.let { file.add(it) }
             }

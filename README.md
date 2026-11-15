@@ -23,7 +23,15 @@ Le délai n'est pas raccourcissable depuis l'appli : il repose sur l'horloge, et
 
 En dernier recours (code perdu, bug) : redémarrer en **mode sans échec** coupe les services d'accessibilité tiers, ce qui permet de retirer l'administrateur et de désinstaller.
 
-Navigateurs : Chrome, Edge, Brave, Firefox, Opera, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
+Navigateurs : Chrome, Edge, Brave (+ Beta et Nightly), Firefox, Opera (+ Beta, Mini, Touch), **Opera GX**, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
+
+**Protection renforcée pour Brave** (et les navigateurs basés sur Chromium) :
+- **Notification « Fermer tous les onglets privés »** : dès qu'un onglet privé existe, même ouvert en arrière-plan, MyControl déclenche cette notification, ce qui ferme tous les onglets privés d'un coup.
+- **Raccourci de l'icône** (appui long → « Nouvel onglet privé ») : le navigateur est refermé dès qu'il s'ouvre.
+- **Activités privées** (liens ouverts « en privé » depuis une autre appli) : refermées immédiatement.
+- Pour que la première protection marche, laisse les **notifications de Brave autorisées**.
+
+**Opera GX / Opera** : le mode privé s'ouvre depuis l'onglet « Privé » du gestionnaire d'onglets. MyControl bloque l'appui sur cet onglet, détecte s'il est actif, et reconnaît l'option « Quitter le mode privé » qui n'apparaît qu'en mode privé. Les boutons pour **quitter** ou **fermer** le mode privé ne sont jamais bloqués.
 
 **Samsung Internet est bloqué en entier** (ainsi que ses versions Beta et Lite) : dès qu'il s'ouvre, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Pense à choisir un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur). D'autres applis peuvent être bloquées en entier sans réinstaller en les ajoutant à `applis_bloquees` dans `detection.json`.
 

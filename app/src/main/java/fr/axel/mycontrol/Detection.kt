@@ -26,10 +26,13 @@ object Detection {
     private val NAVIGATEURS_BASE = setOf(
         "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
         "com.microsoft.emmx",
-        "com.brave.browser",
+        "com.brave.browser", "com.brave.browser_beta", "com.brave.browser_nightly",
         "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix",
         "com.sec.android.app.sbrowser",
-        "com.opera.browser", "com.opera.gx", "com.opera.mini.native",
+        "com.opera.browser", "com.opera.browser.beta",
+        "com.opera.gx",                        // Opera GX (navigateur gaming)
+        "com.opera.mini.native", "com.opera.mini.native.beta",
+        "com.opera.touch",
         "com.vivaldi.browser",
         "com.kiwibrowser.browser",
         "com.mi.globalbrowser",
@@ -84,6 +87,12 @@ object Detection {
         "mode secret est activé",                  // Samsung Internet (variante FR)
         "secret mode is on",
         "turn on secret mode",                     // écran d'intro Samsung
+        // Opera / Opera GX : options visibles seulement EN mode privé
+        "quitter le mode privé",
+        "leave private mode",
+        "exit private mode",
+        "browsing in private mode",                // « You are browsing in private mode »
+        "navigation en mode privé",
     )
 
     /** Fragments d'identifiants de vues propres au mode privé. */
@@ -99,6 +108,35 @@ object Detection {
         "secret_mode_description",
         "secret_mode_intro",
         "secret_mode_guide",
+        // Brave (page d'accueil des onglets privés)
+        "private_ntp",
+        "private_tab_ntp",
+        // Opera / Opera GX
+        "private_mode_ntp",
+        "private_mode_empty",
+        "private_tabs_empty",
+    )
+
+    /**
+     * Libellés de LANCEMENT direct d'un onglet privé, reconnus dans N'IMPORTE
+     * quelle appli (surtout le lanceur : appui long sur l'icône de Brave →
+     * « Nouvel onglet privé »). Volontairement très précis pour éviter les
+     * faux positifs hors navigateur.
+     */
+    private val LANCEMENTS_PRIVES_BASE = listOf(
+        "nouvel onglet privé", "new private tab",
+        "nouvel onglet de navigation privée", "nouvel onglet navigation privée",
+        "new incognito tab", "nouvel onglet incognito",
+        "new inprivate tab", "nouvel onglet inprivate",
+    )
+
+    /**
+     * Notification « Fermer tous les onglets privés » que Brave (et Chrome,
+     * Edge, Vivaldi…) affichent tant qu'un onglet privé est ouvert. La
+     * déclencher ferme TOUS les onglets privés d'un coup.
+     */
+    private val MOTS_NOTIF_FERMER_BASE = listOf(
+        "fermer tous", "fermer les onglets", "close all",
     )
 
     /** Fenêtres d'installation d'Android (utilisées par les mises à jour de MyControl). */
@@ -131,6 +169,7 @@ object Detection {
     @Volatile private var phrasesEcran: List<String> = PHRASES_ECRAN_BASE
     @Volatile private var idsEcran: List<String> = IDS_ECRAN_BASE
     @Volatile private var applisBloquees: Set<String> = APPLIS_BLOQUEES_BASE
+    @Volatile private var lancementsPrives: List<String> = LANCEMENTS_PRIVES_BASE
 
     val NAVIGATEURS: Set<String> get() = navigateurs
 
@@ -155,6 +194,7 @@ object Detection {
             idsEcran = IDS_ECRAN_BASE + lireListe(o, "ids_ecran").map { it.lowercase(Locale.ROOT) }
             // Jamais d'appli système de réglages ni MyControl lui-même : ce
             // serait un moyen de se bloquer hors du téléphone.
+            lancementsPrives = LANCEMENTS_PRIVES_BASE + lireListe(o, "lancements_prives").map { it.lowercase(Locale.ROOT) }
             applisBloquees = APPLIS_BLOQUEES_BASE + lireListe(o, "applis_bloquees")
                 .filter { it !in PAQUETS_REGLAGES_BASE && it != contexte.packageName }
         } catch (_: Exception) {
@@ -187,8 +227,26 @@ object Detection {
         return t.contains("désinstaller") || t.contains("uninstall")
     }
 
+    /** Mots de SORTIE du mode privé : ces clics ne doivent jamais être bloqués. */
+    private val MOTS_SORTIE = listOf("quitter", "leave", "exit", "fermer", "close")
+
     fun estClicPrive(texte: CharSequence?): Boolean {
         val t = normaliser(texte) ?: return false
+        if (MOTS_SORTIE.any { t.contains(it) }) return false
+        return motsClic.any { t.contains(it) }
+    }
+
+    /**
+     * Onglet « Privé » SÉLECTIONNÉ dans le gestionnaire d'onglets (Opera GX,
+     * Opera, Brave, Chrome…) : un libellé court, coché/sélectionné, qui n'est
+     * pas un interrupteur de réglage.
+     */
+    fun estOngletPriveSelectionne(texte: CharSequence?, nomClasse: CharSequence?): Boolean {
+        val t = normaliser(texte) ?: return false
+        if (t.length > 25) return false
+        val c = normaliser(nomClasse) ?: ""
+        if (c.contains("switch") || c.contains("checkbox")) return false
+        if (MOTS_SORTIE.any { t.contains(it) }) return false
         return motsClic.any { t.contains(it) }
     }
 
@@ -201,5 +259,23 @@ object Detection {
         val t = normaliser(id) ?: return false
         if (IDS_EXCLUS.any { t.contains(it) }) return false
         return idsEcran.any { t.contains(it) }
+    }
+
+    /** Clic (hors navigateur) qui lance directement un onglet privé ? */
+    fun estLancementPrive(texte: CharSequence?): Boolean {
+        val t = normaliser(texte) ?: return false
+        return lancementsPrives.any { t.contains(it) }
+    }
+
+    /** Texte de la notification « Fermer tous les onglets privés » ? */
+    fun estNotifOngletsPrives(texte: CharSequence?): Boolean {
+        val t = normaliser(texte) ?: return false
+        return MOTS_NOTIF_FERMER_BASE.any { t.contains(it) } && motsClic.any { t.contains(it) }
+    }
+
+    /** Activité dédiée au mode privé (ex. IncognitoCustomTabActivity de Chromium/Brave). */
+    fun estActivitePrivee(nomClasse: CharSequence?): Boolean {
+        val t = normaliser(nomClasse) ?: return false
+        return t.contains("incognito") || t.contains("privatetab") || t.contains("privatebrowsing")
     }
 }

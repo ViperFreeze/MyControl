@@ -93,6 +93,17 @@ object Detection {
         "exit private mode",
         "browsing in private mode",                // « You are browsing in private mode »
         "navigation en mode privé",
+        // Opera GX : page d'accueil des onglets privés (FR / EN)
+        "vous êtes en mode privé",
+        "vous naviguez en privé",
+        "you're in private mode",
+        "you are in private mode",
+        "you're browsing privately",
+        "private mode is on",
+        "mode privé activé",
+        "won't save your browsing history",
+        "n'enregistrera pas votre historique",
+        "ne conservera pas votre historique",
     )
 
     /** Fragments d'identifiants de vues propres au mode privé. */
@@ -115,6 +126,13 @@ object Detection {
         "private_mode_ntp",
         "private_mode_empty",
         "private_tabs_empty",
+        "private_mode_page",
+        "private_start_page",
+        "private_tab_page",
+        "private_tabs_page",
+        "private_tabs_list",
+        "private_tab_list",
+        "incognito_page",
     )
 
     /**
@@ -128,6 +146,9 @@ object Detection {
         "nouvel onglet de navigation privée", "nouvel onglet navigation privée",
         "new incognito tab", "nouvel onglet incognito",
         "new inprivate tab", "nouvel onglet inprivate",
+        // Opera GX (appui long sur l'icône)
+        "onglet privé", "private tab",
+        "nouvelle fenêtre privée", "new private window",
     )
 
     /**

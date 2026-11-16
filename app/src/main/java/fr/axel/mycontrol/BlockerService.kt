@@ -39,6 +39,11 @@ class BlockerService : AccessibilityService() {
     private var lancementPriveDemande = 0L
     private var dernierBlocageNotif = 0L
 
+    /** Mode diagnostic : dernière capture d'écran (texte) et son contenu. */
+    private var derniereCapture = 0L
+    private var dernierArbre = ""
+    private val versionsNotees = HashSet<String>()
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         // Applique le cache et déclenche une mise à jour distante si besoin.
@@ -84,34 +89,69 @@ class BlockerService : AccessibilityService() {
             return
         }
 
+        if (Diagnostic.actif(this)) capturer(event, paquet)
+
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val maintenant = SystemClock.elapsedRealtime()
             if (maintenant - lancementPriveDemande < 4000) {
                 lancementPriveDemande = 0L
-                bloquerEcran()
+                bloquerEcran("ouvert par un raccourci « onglet privé »")
                 return
             }
             if (Detection.estActivitePrivee(event.className)) {
-                bloquerEcran()
+                bloquerEcran("activité privée ${event.className}")
                 return
             }
         }
 
         when (event.eventType) {
-            AccessibilityEvent.TYPE_VIEW_CLICKED ->
+            AccessibilityEvent.TYPE_VIEW_CLICKED,
+            AccessibilityEvent.TYPE_VIEW_LONG_CLICKED ->
                 if (clicVersModePrive(event)) bloquerClic()
 
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
-            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                val maintenant = SystemClock.elapsedRealtime()
-                // Les changements de contenu sont très fréquents : on limite les scans
-                if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
-                    maintenant - dernierScan < 500
-                ) return
-                dernierScan = maintenant
-                if (ecranPriveAffiche()) bloquerEcran()
+            // Opera GX : on passe à l'onglet « Privé » du gestionnaire
+            // d'onglets en balayant (pas de clic), ou via une barre d'onglets
+            // qui ne signale qu'une sélection.
+            AccessibilityEvent.TYPE_VIEW_SELECTED ->
+                if (selectionVersModePrive(event)) bloquerEcran("onglet Privé sélectionné")
+                else scanner(force = true)
+
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> scanner(force = true)
+
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
+            AccessibilityEvent.TYPE_VIEW_SCROLLED -> scanner(force = false)
+        }
+    }
+
+    /** Les changements de contenu sont très fréquents : on limite les scans. */
+    private fun scanner(force: Boolean) {
+        val maintenant = SystemClock.elapsedRealtime()
+        if (!force && maintenant - dernierScan < 500) return
+        dernierScan = maintenant
+        ecranPriveAffiche()?.let { bloquerEcran(it) }
+    }
+
+    private fun selectionVersModePrive(event: AccessibilityEvent): Boolean {
+        val morceaux = mutableListOf<CharSequence?>()
+        morceaux.addAll(event.text)
+        morceaux.add(event.contentDescription)
+        event.source?.let { morceaux.addAll(textesDuNoeud(it, 2)) }
+        return morceaux.any { Detection.estOngletPriveSelectionne(it, event.className) }
+    }
+
+    /**
+     * Textes d'un élément ET de ses enfants : chez Opera GX, le clic est
+     * souvent reçu par un conteneur (icône + libellé) dont le libellé
+     * « Privé » est dans un enfant.
+     */
+    private fun textesDuNoeud(noeud: AccessibilityNodeInfo, profondeur: Int): List<CharSequence?> {
+        val sortie = mutableListOf<CharSequence?>(noeud.text, noeud.contentDescription)
+        if (profondeur > 0) {
+            for (i in 0 until minOf(noeud.childCount, 8)) {
+                noeud.getChild(i)?.let { sortie.addAll(textesDuNoeud(it, profondeur - 1)) }
             }
         }
+        return sortie
     }
 
     private fun clicVersModePrive(event: AccessibilityEvent): Boolean {
@@ -119,8 +159,7 @@ class BlockerService : AccessibilityService() {
         morceaux.addAll(event.text)
         morceaux.add(event.contentDescription)
         event.source?.let { noeud ->
-            morceaux.add(noeud.text)
-            morceaux.add(noeud.contentDescription)
+            morceaux.addAll(textesDuNoeud(noeud, 2))
             morceaux.add(noeud.viewIdResourceName)
         }
         return morceaux.any { Detection.estClicPrive(it) }
@@ -185,9 +224,10 @@ class BlockerService : AccessibilityService() {
         if (ferme) signaler()
     }
 
-    private fun ecranPriveAffiche(): Boolean {
-        val racine = rootInActiveWindow ?: return false
-        if (racine.packageName?.toString() !in Detection.NAVIGATEURS) return false
+    /** Raison du blocage si un onglet privé est affiché, sinon null. */
+    private fun ecranPriveAffiche(): String? {
+        val racine = rootInActiveWindow ?: return null
+        if (racine.packageName?.toString() !in Detection.NAVIGATEURS) return null
 
         val file = ArrayDeque<AccessibilityNodeInfo>()
         file.add(racine)
@@ -195,34 +235,41 @@ class BlockerService : AccessibilityService() {
         while (file.isNotEmpty() && visites < 600) {
             val noeud = file.poll() ?: break
             visites++
-            if (Detection.estIdEcranPrive(noeud.viewIdResourceName) ||
-                Detection.estPhraseEcranPrive(noeud.text) ||
+            if (Detection.estIdEcranPrive(noeud.viewIdResourceName))
+                return "id ${noeud.viewIdResourceName}"
+            if (Detection.estPhraseEcranPrive(noeud.text) ||
                 Detection.estPhraseEcranPrive(noeud.contentDescription)
-            ) return true
-            // Onglet « Privé » actif dans le gestionnaire d'onglets (Opera GX…)
-            if ((noeud.isSelected || noeud.isChecked) &&
-                (Detection.estOngletPriveSelectionne(noeud.text, noeud.className) ||
-                    Detection.estOngletPriveSelectionne(noeud.contentDescription, noeud.className))
-            ) return true
+            ) return "texte « ${noeud.text ?: noeud.contentDescription} »"
+            // Onglet « Privé » actif dans le gestionnaire d'onglets (Opera GX…).
+            // L'état « sélectionné » est parfois porté par le conteneur et le
+            // libellé par un enfant (icône + texte) : on regarde les deux.
+            if (noeud.isSelected || noeud.isChecked) {
+                val libelle = textesDuNoeud(noeud, 1).firstOrNull {
+                    Detection.estOngletPriveSelectionne(it, noeud.className)
+                }
+                if (libelle != null) return "onglet « $libelle » sélectionné"
+            }
             for (i in 0 until noeud.childCount) {
                 noeud.getChild(i)?.let { file.add(it) }
             }
         }
-        return false
+        return null
     }
 
     private fun bloquerClic() {
         val maintenant = SystemClock.elapsedRealtime()
         if (maintenant - dernierBlocageClic < 1200) return
         dernierBlocageClic = maintenant
+        if (Diagnostic.actif(this)) Diagnostic.noter(this, "→ BLOQUÉ : clic vers le mode privé")
         performGlobalAction(GLOBAL_ACTION_BACK)
         signaler()
     }
 
-    private fun bloquerEcran() {
+    private fun bloquerEcran(raison: String = "onglet privé") {
         val maintenant = SystemClock.elapsedRealtime()
         if (maintenant - dernierBlocageEcran < 1500) return
         dernierBlocageEcran = maintenant
+        if (Diagnostic.actif(this)) Diagnostic.noter(this, "→ BLOQUÉ : $raison")
         performGlobalAction(GLOBAL_ACTION_BACK)
         performGlobalAction(GLOBAL_ACTION_HOME)
         signaler()
@@ -305,6 +352,36 @@ class BlockerService : AccessibilityService() {
         performGlobalAction(GLOBAL_ACTION_BACK)
         performGlobalAction(GLOBAL_ACTION_HOME)
         Toast.makeText(this, R.string.toast_reglage_protege, Toast.LENGTH_LONG).show()
+    }
+
+    // --- Mode diagnostic ----------------------------------------------------
+
+    /** Note l'événement et, s'il a changé, le contenu de l'écran du navigateur. */
+    private fun capturer(event: AccessibilityEvent, paquet: String) {
+        if (versionsNotees.add(paquet)) {
+            val version = try {
+                packageManager.getPackageInfo(paquet, 0).versionName
+            } catch (_: Exception) { "?" }
+            Diagnostic.noter(this, "Navigateur $paquet, version $version")
+        }
+        val type = AccessibilityEvent.eventTypeToString(event.eventType)
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+            event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED
+        ) {
+            val textes = (event.text.toList<CharSequence?>() + listOf(event.contentDescription))
+                .filterNotNull().joinToString(" | ")
+            Diagnostic.noter(this, "$paquet $type classe=${event.className} «$textes»" +
+                (event.source?.viewIdResourceName?.let { " #$it" } ?: ""))
+        }
+        val maintenant = SystemClock.elapsedRealtime()
+        if (maintenant - derniereCapture < 1500) return
+        derniereCapture = maintenant
+        val racine = rootInActiveWindow ?: return
+        if (racine.packageName?.toString() != paquet) return
+        val arbre = Diagnostic.decrireArbre(racine)
+        if (arbre == dernierArbre) return
+        dernierArbre = arbre
+        Diagnostic.noter(this, "Écran de $paquet :\n$arbre")
     }
 
     private fun signaler() {

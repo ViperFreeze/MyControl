@@ -23,7 +23,7 @@ Le délai n'est pas raccourcissable depuis l'appli : il repose sur l'horloge, et
 
 En dernier recours (code perdu, bug) : redémarrer en **mode sans échec** coupe les services d'accessibilité tiers, ce qui permet de retirer l'administrateur et de désinstaller.
 
-Navigateurs : Chrome, Edge, Brave (+ Beta et Nightly), Firefox, Opera (+ Beta, Mini, Touch), **Opera GX**, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
+Navigateurs : Chrome, Edge, Brave (+ Beta et Nightly), Firefox, Vivaldi, Kiwi, Mi Browser, Huawei Browser.
 
 **Protection renforcée pour Brave** (et les navigateurs basés sur Chromium) :
 - **Notification « Fermer tous les onglets privés »** : dès qu'un onglet privé existe, même ouvert en arrière-plan, MyControl déclenche cette notification, ce qui ferme tous les onglets privés d'un coup.
@@ -31,7 +31,7 @@ Navigateurs : Chrome, Edge, Brave (+ Beta et Nightly), Firefox, Opera (+ Beta, M
 - **Activités privées** (liens ouverts « en privé » depuis une autre appli) : refermées immédiatement.
 - Pour que la première protection marche, laisse les **notifications de Brave autorisées**.
 
-**Opera GX / Opera** : le mode privé s'ouvre depuis l'onglet « Privé » du gestionnaire d'onglets. MyControl bloque l'appui sur cet onglet, détecte s'il est actif, et reconnaît l'option « Quitter le mode privé » qui n'apparaît qu'en mode privé. Les boutons pour **quitter** ou **fermer** le mode privé ne sont jamais bloqués.
+**Opera GX / Opera** (désormais bloqués en entier, voir plus bas — la détection fine reste dans le code au cas où on les débloquerait) : le mode privé s'ouvre depuis l'onglet « Privé » du gestionnaire d'onglets. MyControl bloque l'appui sur cet onglet, détecte s'il est actif, et reconnaît l'option « Quitter le mode privé » qui n'apparaît qu'en mode privé. Les boutons pour **quitter** ou **fermer** le mode privé ne sont jamais bloqués.
 
 Depuis la mise à jour « Opera GX renforcé », MyControl repère aussi :
 - le passage à l'onglet « Privé » **en balayant** le gestionnaire d'onglets (sans appui), ou par une simple sélection ;
@@ -43,7 +43,7 @@ Depuis la mise à jour « Opera GX renforcé », MyControl repère aussi :
 
 Dans l'appli, appuie sur **« Un navigateur passe à travers ? Diagnostic »** → **Démarrer (10 min)**. Ouvre le navigateur, essaie d'ouvrir un onglet privé, puis reviens dans MyControl → **Partager le rapport**. Le rapport liste les textes, identifiants et états (sélectionné, coché) des écrans du navigateur, ainsi que chaque blocage et sa raison. Il ne quitte le téléphone que si tu le partages. Avec ce rapport, il suffit le plus souvent d'ajouter un libellé ou un identifiant dans `detection.json`, sans réinstaller.
 
-**Samsung Internet est bloqué en entier** (ainsi que ses versions Beta et Lite) : dès qu'il s'ouvre, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Pense à choisir un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur). D'autres applis peuvent être bloquées en entier sans réinstaller en les ajoutant à `applis_bloquees` dans `detection.json`.
+**Samsung Internet et toute la famille Opera sont bloqués en entier** (Samsung Internet + Beta et Lite ; Opera, Opera Beta, **Opera GX**, Opera Mini + Beta, Opera Touch, Opera Crypto Browser) : dès qu'il s'ouvre, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Pense à choisir un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur). D'autres applis peuvent être bloquées en entier sans réinstaller en les ajoutant à `applis_bloquees` dans `detection.json`.
 
 ## Obtenir l'APK
 

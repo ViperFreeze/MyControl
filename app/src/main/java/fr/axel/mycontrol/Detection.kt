@@ -42,12 +42,21 @@ object Detection {
     /**
      * Applis bloquées EN ENTIER : dès qu'elles passent au premier plan, on
      * renvoie à l'écran d'accueil. Samsung Internet est bloqué complètement
-     * car son mode Secret est difficile à détecter de façon fiable.
+     * car son mode Secret est difficile à détecter de façon fiable ; toute la
+     * famille Opera (dont Opera GX) aussi, car son onglet « Privé » passe
+     * encore entre les mailles.
      */
     private val APPLIS_BLOQUEES_BASE = setOf(
         "com.sec.android.app.sbrowser",        // Samsung Internet
         "com.sec.android.app.sbrowser.beta",   // Samsung Internet Beta
         "com.sec.android.app.sbrowser.lite",   // Samsung Internet Lite
+        "com.opera.browser",                   // Opera
+        "com.opera.browser.beta",              // Opera Beta
+        "com.opera.gx",                        // Opera GX (navigateur gaming)
+        "com.opera.mini.native",               // Opera Mini
+        "com.opera.mini.native.beta",          // Opera Mini Beta
+        "com.opera.touch",                     // Opera Touch
+        "com.opera.cryptobrowser",             // Opera Crypto Browser
     )
 
     /** Applis système d'où l'on peut désactiver ou désinstaller MyControl. */

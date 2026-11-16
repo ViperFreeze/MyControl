@@ -288,7 +288,10 @@ class MainActivity : Activity() {
                 }
             }
             dispo > 0 -> {
-                majStatut.text = getString(R.string.maj_disponible, dispo)
+                val texte = getString(R.string.maj_disponible, dispo)
+                val erreur = MajAppli.derniereErreur(this)
+                majStatut.text =
+                    if (erreur == null) texte else texte + "\n\n" + getString(R.string.maj_dernier_echec, erreur)
                 bouton(majBouton, getString(R.string.maj_bouton_installer)) {
                     MajAppli.lancer(this) { rafraichir() }
                     rafraichir()

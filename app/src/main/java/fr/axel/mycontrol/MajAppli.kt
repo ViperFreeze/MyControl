@@ -42,6 +42,7 @@ object MajAppli {
     private const val CLE_DISPO = "version_dispo"
     private const val CLE_DERNIER = "dernier_ms"
     private const val CLE_INSTALL = "installation_jusqua"
+    private const val CLE_ERREUR = "derniere_erreur"
 
     /** Intervalle minimal entre deux vérifications automatiques. */
     private const val INTERVALLE_MS = 6 * 60 * 60 * 1000L // 6 h
@@ -182,10 +183,36 @@ object MajAppli {
                 val pi = PendingIntent.getBroadcast(c, id, retour, flags)
                 session.commit(pi.intentSender)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             etat = Etat.ERREUR
             occupe = false
+            noterErreur(c, "téléchargement impossible (${e.message ?: e.javaClass.simpleName})")
         }
+    }
+
+    /** Raison du dernier échec d'installation, ou null. Affichée dans l'appli. */
+    fun derniereErreur(c: Context): String? = prefs(c).getString(CLE_ERREUR, null)
+
+    private fun noterErreur(c: Context, raison: String) {
+        prefs(c).edit().putString(CLE_ERREUR, raison).apply()
+    }
+
+    /** Traduit le code renvoyé par Android en explication lisible. */
+    private fun raison(status: Int, message: String?): String {
+        val texte = when (status) {
+            PackageInstaller.STATUS_FAILURE_ABORTED ->
+                "installation annulée (fenêtre fermée ou « Annuler »)"
+            PackageInstaller.STATUS_FAILURE_BLOCKED ->
+                "bloquée par le téléphone (Blocage automatique / Auto Blocker de Samsung ?)"
+            PackageInstaller.STATUS_FAILURE_CONFLICT ->
+                "conflit avec la version installée (signature différente ?)"
+            PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "version incompatible avec ce téléphone"
+            PackageInstaller.STATUS_FAILURE_INVALID -> "fichier APK invalide ou incomplet"
+            PackageInstaller.STATUS_FAILURE_STORAGE -> "pas assez d'espace de stockage"
+            8 /* STATUS_FAILURE_TIMEOUT, Android 14 */ -> "délai dépassé"
+            else -> "erreur inconnue"
+        }
+        return if (message.isNullOrBlank()) "$texte [code $status]" else "$texte [code $status : $message]"
     }
 
     /** Lance [installer] en arrière-plan (depuis l'écran de l'appli). */
@@ -226,24 +253,34 @@ object MajAppli {
     internal fun terminer(c: Context, ok: Boolean) {
         occupe = false
         etat = if (ok) Etat.A_JOUR else Etat.ERREUR
-        prefs(c).edit().putLong(CLE_INSTALL, 0).apply()
+        val e = prefs(c).edit().putLong(CLE_INSTALL, 0)
+        if (ok) e.remove(CLE_ERREUR)
+        e.apply()
     }
 
     /** Résultat renvoyé par Android à la fin (ou au milieu) de l'installation. */
     class ResultatMaj : BroadcastReceiver() {
         override fun onReceive(c: Context, intent: Intent) {
-            when (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+            val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
+            when (status) {
                 PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                     // Première mise à jour : Android demande une confirmation.
                     @Suppress("DEPRECATION")
                     val confirmer = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
                     confirmer?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    try { c.startActivity(confirmer) } catch (_: Exception) { terminer(c, false) }
+                    try {
+                        c.startActivity(confirmer)
+                    } catch (e: Exception) {
+                        noterErreur(c, "impossible d'ouvrir la confirmation (${e.javaClass.simpleName})")
+                        terminer(c, false)
+                    }
                 }
                 PackageInstaller.STATUS_SUCCESS -> terminer(c, true)
                 else -> {
+                    val r = raison(status, intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE))
+                    noterErreur(c, r)
                     terminer(c, false)
-                    Toast.makeText(c, R.string.maj_echec, Toast.LENGTH_LONG).show()
+                    Toast.makeText(c, c.getString(R.string.maj_echec, r), Toast.LENGTH_LONG).show()
                 }
             }
         }

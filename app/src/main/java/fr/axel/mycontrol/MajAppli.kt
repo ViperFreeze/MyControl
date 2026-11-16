@@ -213,7 +213,9 @@ object MajAppli {
             else -> "erreur inconnue"
         }
         return if (message.isNullOrBlank()) "$texte [code $status]" else "$texte [code $status : $message]"
-    } [installer] en arrière-plan (depuis l'écran de l'appli). */
+    }
+
+    /** Lance [installer] en arrière-plan (depuis l'écran de l'appli). */
     fun lancer(c: Context, fin: (() -> Unit)? = null) {
         val app = c.applicationContext
         Thread {

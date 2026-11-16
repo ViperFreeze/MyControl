@@ -79,7 +79,8 @@
     <string name="maj_bouton_chercher">Rechercher une mise à jour</string>
     <string name="maj_bouton_installer">Mettre à jour maintenant</string>
     <string name="maj_bouton_autoriser">Autoriser les mises à jour</string>
-    <string name="maj_echec">La mise à jour a échoué. Réessaie depuis MyControl.</string>
+    <string name="maj_echec">La mise à jour a échoué : %1$s</string>
+    <string name="maj_dernier_echec">Dernier essai : %1$s</string>
 
     <!-- Service / admin -->
     <string name="service_label">MyControl – blocage navigation privée</string>

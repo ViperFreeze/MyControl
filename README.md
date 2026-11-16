@@ -33,6 +33,16 @@ Navigateurs : Chrome, Edge, Brave (+ Beta et Nightly), Firefox, Opera (+ Beta, M
 
 **Opera GX / Opera** : le mode privé s'ouvre depuis l'onglet « Privé » du gestionnaire d'onglets. MyControl bloque l'appui sur cet onglet, détecte s'il est actif, et reconnaît l'option « Quitter le mode privé » qui n'apparaît qu'en mode privé. Les boutons pour **quitter** ou **fermer** le mode privé ne sont jamais bloqués.
 
+Depuis la mise à jour « Opera GX renforcé », MyControl repère aussi :
+- le passage à l'onglet « Privé » **en balayant** le gestionnaire d'onglets (sans appui), ou par une simple sélection ;
+- l'appui sur un bouton dont le libellé « Privé » est dans un sous-élément (icône + texte) ;
+- l'appui long, et le raccourci de l'icône d'Opera GX (« Onglet privé ») ;
+- la page d'accueil privée d'Opera GX (« Vous êtes en mode privé », « You're in private mode »…).
+
+## Un navigateur passe encore à travers ? Mode diagnostic
+
+Dans l'appli, appuie sur **« Un navigateur passe à travers ? Diagnostic »** → **Démarrer (10 min)**. Ouvre le navigateur, essaie d'ouvrir un onglet privé, puis reviens dans MyControl → **Partager le rapport**. Le rapport liste les textes, identifiants et états (sélectionné, coché) des écrans du navigateur, ainsi que chaque blocage et sa raison. Il ne quitte le téléphone que si tu le partages. Avec ce rapport, il suffit le plus souvent d'ajouter un libellé ou un identifiant dans `detection.json`, sans réinstaller.
+
 **Samsung Internet est bloqué en entier** (ainsi que ses versions Beta et Lite) : dès qu'il s'ouvre, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Pense à choisir un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur). D'autres applis peuvent être bloquées en entier sans réinstaller en les ajoutant à `applis_bloquees` dans `detection.json`.
 
 ## Obtenir l'APK

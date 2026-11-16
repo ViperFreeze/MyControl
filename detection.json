@@ -58,7 +58,17 @@
     "leave private mode",
     "exit private mode",
     "browsing in private mode",
-    "navigation en mode privé"
+    "navigation en mode privé",
+    "vous êtes en mode privé",
+    "vous naviguez en privé",
+    "you're in private mode",
+    "you are in private mode",
+    "you're browsing privately",
+    "private mode is on",
+    "mode privé activé",
+    "won't save your browsing history",
+    "n'enregistrera pas votre historique",
+    "ne conservera pas votre historique"
   ],
   "ids_ecran": [
     "incognito_badge",
@@ -75,7 +85,14 @@
     "private_tab_ntp",
     "private_mode_ntp",
     "private_mode_empty",
-    "private_tabs_empty"
+    "private_tabs_empty",
+    "private_mode_page",
+    "private_start_page",
+    "private_tab_page",
+    "private_tabs_page",
+    "private_tabs_list",
+    "private_tab_list",
+    "incognito_page"
   ],
   "lancements_prives": [
     "nouvel onglet privé",
@@ -85,6 +102,10 @@
     "new incognito tab",
     "nouvel onglet incognito",
     "new inprivate tab",
-    "nouvel onglet inprivate"
+    "nouvel onglet inprivate",
+    "onglet privé",
+    "private tab",
+    "nouvelle fenêtre privée",
+    "new private window"
   ]
 }

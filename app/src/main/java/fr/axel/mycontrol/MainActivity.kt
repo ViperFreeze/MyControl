@@ -171,6 +171,16 @@ class MainActivity : Activity() {
         }
         racine.addView(lienAide)
 
+        // --- Diagnostic (quand un navigateur passe à travers) ---
+        racine.addView(TextView(this).apply {
+            text = getString(R.string.diag_lien)
+            textSize = 13f
+            setTextColor(GRIS)
+            gravity = Gravity.CENTER
+            setPadding(0, px(4), 0, px(16))
+            setOnClickListener { afficherDiagnostic() }
+        })
+
         setContentView(ScrollView(this).apply { addView(racine) })
     }
 
@@ -397,6 +407,30 @@ class MainActivity : Activity() {
             .setMessage(getString(R.string.aide))
             .setPositiveButton(android.R.string.ok, null)
             .show()
+    }
+
+    private fun afficherDiagnostic() {
+        val message = if (Diagnostic.actif(this))
+            getString(R.string.diag_en_cours, Diagnostic.minutesRestantes(this))
+        else getString(R.string.diag_explication)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.diag_titre)
+            .setMessage(message)
+            .setPositiveButton(R.string.diag_partager) { _, _ -> partagerDiagnostic() }
+            .setNeutralButton(R.string.diag_demarrer) { _, _ -> Diagnostic.activer(this) }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun partagerDiagnostic() {
+        val rapport = Diagnostic.rapport(this)
+        if (rapport.isBlank()) { toast(R.string.diag_vide); return }
+        val envoi = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Diagnostic MyControl")
+            putExtra(Intent.EXTRA_TEXT, rapport)
+        }
+        startActivity(Intent.createChooser(envoi, getString(R.string.diag_partager)))
     }
 
     // --- Utilitaires ------------------------------------------------------

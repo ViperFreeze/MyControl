@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_doc": "Config de détection de MyControl, chargée à distance par l'appli (aucune réinstallation nécessaire). Édite ce fichier sur GitHub : le téléphone le récupère automatiquement et l'ajoute aux listes de base intégrées à l'appli. Les listes de base servent de filet de sécurité si ce fichier est injoignable ou invalide.",
+  "_doc": "Config de détection de MyControl, chargée à distance par l'appli (aucune réinstallation nécessaire). Édite ce fichier sur GitHub : le téléphone le récupère automatiquement et l'ajoute aux listes de base intégrées à l'appli. Les listes de base servent de filet de sécurité si ce fichier est injoignable ou invalide. Liste blanche : seuls Chrome et Samsung Internet sont autorisés (fixé dans l'APK, non modifiable ici) ; tout autre navigateur est bloqué en entier, même inconnu. applis_bloquees permet seulement d'ajouter des applis à bloquer.",
   "navigateurs": [
     "com.android.chrome",
     "com.chrome.beta",
@@ -26,8 +26,6 @@
     "com.huawei.browser"
   ],
   "applis_bloquees": [
-    "com.sec.android.app.sbrowser",
-    "com.sec.android.app.sbrowser.beta",
     "com.sec.android.app.sbrowser.lite",
     "com.opera.browser",
     "com.opera.browser.beta",

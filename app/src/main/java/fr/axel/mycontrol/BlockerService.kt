@@ -19,9 +19,10 @@ import java.util.ArrayDeque
  *  2. Écran détecté : si un onglet privé est quand même affiché
  *     (page d'accueil privée, badge incognito…), on renvoie à l'écran d'accueil.
  *
- * Et un blocage total : les applis de Detection.APPLIS_BLOQUEES (Samsung
- * Internet) sont refermées dès qu'elles s'affichent, y compris quand une autre
- * appli ouvre un lien dedans.
+ * Et un blocage total (liste blanche) : seuls Chrome et Samsung Internet
+ * sont autorisés. Tout autre navigateur — connu, inconnu ou installé plus
+ * tard — est refermé dès qu'il s'affiche, y compris quand une autre appli
+ * ouvre un lien dedans.
  */
 class BlockerService : AccessibilityService() {
 
@@ -44,8 +45,28 @@ class BlockerService : AccessibilityService() {
     private var dernierArbre = ""
     private val versionsNotees = HashSet<String>()
 
+    /** Nouvelle appli installée : on refait la détection des navigateurs. */
+    private val recepteurApplis = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: android.content.Context, i: android.content.Intent) {
+            Detection.oublierNavigateurs()
+        }
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        val filtre = android.content.IntentFilter().apply {
+            addAction(android.content.Intent.ACTION_PACKAGE_ADDED)
+            addAction(android.content.Intent.ACTION_PACKAGE_REPLACED)
+            addAction(android.content.Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+        }
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(recepteurApplis, filtre, RECEIVER_EXPORTED)
+            } else {
+                registerReceiver(recepteurApplis, filtre)
+            }
+        } catch (_: Exception) {}
         // Applique le cache et déclenche une mise à jour distante si besoin.
         MiseAJour.planifier(this)
         // Vérifie si une nouvelle version de l'appli existe (et l'installe
@@ -68,7 +89,7 @@ class BlockerService : AccessibilityService() {
             surveillerReglages(event)
             return
         }
-        if (paquet in Detection.APPLIS_BLOQUEES) {
+        if (Detection.estBloqueeEnEntier(this, paquet)) {
             surveillerAppliBloquee(event, paquet)
             return
         }
@@ -275,7 +296,7 @@ class BlockerService : AccessibilityService() {
         signaler()
     }
 
-    // --- Blocage total (Samsung Internet) ----------------------------------
+    // --- Blocage total (navigateurs hors liste blanche) ----------------------------------
 
     private fun surveillerAppliBloquee(event: AccessibilityEvent, paquet: String) {
         when (event.eventType) {
@@ -387,6 +408,11 @@ class BlockerService : AccessibilityService() {
     private fun signaler() {
         Stats.incrementer(this)
         Toast.makeText(this, R.string.toast_bloque, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onDestroy() {
+        try { unregisterReceiver(recepteurApplis) } catch (_: Exception) {}
+        super.onDestroy()
     }
 
     override fun onInterrupt() {}

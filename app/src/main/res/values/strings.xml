@@ -59,7 +59,7 @@
 
     <!-- Toasts -->
     <string name="toast_bloque">Navigation privée bloquée par MyControl</string>
-    <string name="toast_appli_bloquee">Ce navigateur est bloqué par MyControl. Utilise un autre navigateur.</string>
+    <string name="toast_appli_bloquee">Ce navigateur est bloqué par MyControl. Utilise Chrome ou Samsung Internet.</string>
     <string name="toast_armee">Protection verrouillée. Tout est en place.</string>
     <string name="toast_deverrouille">Déverrouillé 5 minutes. Tu peux désinstaller.</string>
     <string name="toast_code_faux">Code incorrect.</string>
@@ -90,7 +90,7 @@
     <string name="admin_avertissement">Désactiver cette protection permettra de désinstaller MyControl.</string>
 
     <!-- Aide -->
-    <string name="aide">• Si l\'option d\'accessibilité est grisée (Android 13+) : Paramètres → Applications → MyControl → menu ⋮ → « Autoriser les paramètres restreints ».\n\n• À l\'installation, si le téléphone affiche un avertissement « application non vérifiée », choisis « Installer quand même » : l\'appli vient d\'un APK et non du Play Store.\n\n• Pour désinstaller : « Demander la désactivation », attends le créneau de 4h à 5h du matin, entre le code, puis « Désinstaller ».\n\n• Mises à jour : MyControl se met à jour toute seule, sans désinstaller et sans code. La première fois, Android demande de confirmer ; ensuite c\'est automatique.\n\n• En cas de blocage (code perdu, bug) : redémarre le téléphone en mode sans échec, les services d\'accessibilité y sont coupés le temps de retirer l\'appli.\n\nNavigateurs surveillés : Chrome, Edge, Brave, Firefox, Vivaldi, Kiwi, Mi Browser, Huawei Browser.\n\nSamsung Internet et tous les Opera (Opera, Opera GX, Opera Mini, Opera Touch…) sont bloqués en entier : choisis un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur), sinon les liens ouverts depuis d\'autres applis seront refermés.</string>
+    <string name="aide">• Si l\'option d\'accessibilité est grisée (Android 13+) : Paramètres → Applications → MyControl → menu ⋮ → « Autoriser les paramètres restreints ».\n\n• À l\'installation, si le téléphone affiche un avertissement « application non vérifiée », choisis « Installer quand même » : l\'appli vient d\'un APK et non du Play Store.\n\n• Pour désinstaller : « Demander la désactivation », attends le créneau de 4h à 5h du matin, entre le code, puis « Désinstaller ».\n\n• Mises à jour : MyControl se met à jour toute seule, sans désinstaller et sans code. La première fois, Android demande de confirmer ; ensuite c\'est automatique.\n\n• En cas de blocage (code perdu, bug) : redémarre le téléphone en mode sans échec, les services d\'accessibilité y sont coupés le temps de retirer l\'appli.\n\nNavigateurs autorisés : Chrome et Samsung Internet (la navigation privée y reste bloquée).\n\nTous les autres navigateurs sont bloqués en entier — Edge, Brave, Firefox, Opera, DuckDuckGo, Tor… et même ceux installés plus tard : MyControl reconnaît toute appli capable d\'ouvrir un site web. Choisis Chrome ou Samsung Internet comme navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur), sinon les liens ouverts depuis d\'autres applis seront refermés.</string>
 
     <!-- Diagnostic -->
     <string name="diag_lien">Un navigateur passe à travers ? Diagnostic</string>

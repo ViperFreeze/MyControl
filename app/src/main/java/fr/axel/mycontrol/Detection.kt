@@ -40,24 +40,72 @@ object Detection {
     )
 
     /**
-     * Applis bloquées EN ENTIER : dès qu'elles passent au premier plan, on
-     * renvoie à l'écran d'accueil. Samsung Internet est bloqué complètement
-     * car son mode Secret est difficile à détecter de façon fiable ; toute la
-     * famille Opera (dont Opera GX) aussi, car son onglet « Privé » passe
-     * encore entre les mailles.
+     * LISTE BLANCHE : les seuls navigateurs autorisés. La navigation privée y
+     * reste bloquée (détection fine). Tout AUTRE navigateur — connu, inconnu
+     * ou installé plus tard — est bloqué en entier.
+     * Ne peut PAS être élargie à distance : seul un nouvel APK peut la changer.
      */
-    private val APPLIS_BLOQUEES_BASE = setOf(
+    val NAVIGATEURS_AUTORISES = setOf(
+        "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary",
         "com.sec.android.app.sbrowser",        // Samsung Internet
         "com.sec.android.app.sbrowser.beta",   // Samsung Internet Beta
-        "com.sec.android.app.sbrowser.lite",   // Samsung Internet Lite
-        "com.opera.browser",                   // Opera
-        "com.opera.browser.beta",              // Opera Beta
-        "com.opera.gx",                        // Opera GX (navigateur gaming)
-        "com.opera.mini.native",               // Opera Mini
-        "com.opera.mini.native.beta",          // Opera Mini Beta
-        "com.opera.touch",                     // Opera Touch
-        "com.opera.cryptobrowser",             // Opera Crypto Browser
     )
+
+    /**
+     * Applis bloquées EN ENTIER, en plus de la détection automatique : dès
+     * qu'elles passent au premier plan, on renvoie à l'écran d'accueil.
+     * Navigateurs connus, dont ceux « tout privé » (DuckDuckGo, Focus, Tor…).
+     */
+    private val APPLIS_BLOQUEES_BASE = setOf(
+        "com.sec.android.app.sbrowser.lite",   // Samsung Internet Lite
+        "com.opera.browser", "com.opera.browser.beta", "com.opera.gx",
+        "com.opera.mini.native", "com.opera.mini.native.beta",
+        "com.opera.touch", "com.opera.cryptobrowser",
+        "com.microsoft.emmx", "com.microsoft.emmx.beta", "com.microsoft.emmx.dev", "com.microsoft.emmx.canary",
+        "com.brave.browser", "com.brave.browser_beta", "com.brave.browser_nightly",
+        "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix",
+        "org.mozilla.focus", "org.mozilla.klar", "org.mozilla.rocket",
+        "org.torproject.torbrowser", "org.torproject.torbrowser_alpha",
+        "com.duckduckgo.mobile.android",
+        "com.vivaldi.browser", "com.vivaldi.browser.snapshot",
+        "com.kiwibrowser.browser",
+        "com.mi.globalbrowser", "com.android.browser", "com.huawei.browser",
+        "com.UCMobile.intl", "com.uc.browser.en", "com.ucmobile.lite",
+        "com.yandex.browser", "com.yandex.browser.lite",
+        "com.ecosia.android", "com.aloha.browser", "mark.via.gp", "mark.via",
+        "com.cloudmosa.puffin", "com.cloudmosa.puffinFree", "mobi.mgeek.TunnyBrowser",
+        "com.ghostery.android.ghostery", "com.mycompany.app.soulbrowser",
+        "org.bromite.bromite", "org.cromite.cromite", "us.spotco.fennec_dos",
+        "org.ironfoxoss.ironfox", "io.github.forkmaintainers.iceraven",
+        "com.stoutner.privacybrowser.standard", "com.stoutner.privacybrowser.free",
+        "acr.browser.lightning", "acr.browser.barebones", "com.qwant.liberty",
+        "com.startpage.app", "com.hsv.freeadblockerbrowser", "com.apusapps.browser",
+        "com.lenovo.browser", "com.oppo.browser", "com.heytap.browser", "com.vivo.browser",
+        "com.microsoft.bing", "org.adblockplus.browser", "com.avast.android.secure.browser",
+        "com.avg.android.secure.browser", "com.cake.browser", "com.explore.web.browser",
+        "com.tcl.browser", "com.transsion.phoenix", "com.opera.app.news",
+    )
+
+    /**
+     * Applis qui savent ouvrir n'importe quel lien web sans être des
+     * navigateurs : jamais bloquées par la détection automatique.
+     */
+    private val JAMAIS_BLOQUEES = setOf(
+        "com.google.android.googlequicksearchbox", // Appli Google
+        "com.google.android.gm",                   // Gmail
+        "com.google.android.apps.docs",            // Drive
+        "com.google.android.youtube",
+        "com.android.vending",                     // Play Store
+        "com.android.systemui",
+        "com.google.android.permissioncontroller",
+        "com.google.android.webview", "com.android.webview",
+        "com.google.android.apps.nexuslauncher",
+        "com.sec.android.app.launcher",
+        "com.samsung.android.app.galaxyfinder",
+    )
+
+    /** Mots dans le nom de paquet qui trahissent un navigateur. */
+    private val MOTS_PAQUET_NAVIGATEUR = listOf("browser", "navigateur", "webbrowser")
 
     /** Applis système d'où l'on peut désactiver ou désinstaller MyControl. */
     private val PAQUETS_REGLAGES_BASE = setOf(
@@ -226,9 +274,56 @@ object Detection {
             // serait un moyen de se bloquer hors du téléphone.
             lancementsPrives = LANCEMENTS_PRIVES_BASE + lireListe(o, "lancements_prives").map { it.lowercase(Locale.ROOT) }
             applisBloquees = APPLIS_BLOQUEES_BASE + lireListe(o, "applis_bloquees")
-                .filter { it !in PAQUETS_REGLAGES_BASE && it != contexte.packageName }
+                .filter { it !in PAQUETS_REGLAGES_BASE && it != contexte.packageName && it !in NAVIGATEURS_AUTORISES }
+            oublierNavigateurs()
         } catch (_: Exception) {
             // JSON invalide : on garde la base + ce qui était déjà chargé.
+        }
+    }
+
+    // --- Liste blanche : tout navigateur non autorisé est bloqué -----------
+
+    /** Résultat de la détection par appli (le chemin d'événements est très chaud). */
+    private val cacheNavigateurs = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
+    /** À appeler quand une appli est installée / mise à jour / supprimée. */
+    fun oublierNavigateurs() = cacheNavigateurs.clear()
+
+    /**
+     * Cette appli doit-elle être bloquée EN ENTIER ? Oui si c'est un
+     * navigateur qui n'est pas dans [NAVIGATEURS_AUTORISES] :
+     *  - liste connue (base + detection.json) ;
+     *  - OU l'appli déclare savoir ouvrir n'importe quelle adresse web
+     *    (http/https vers un site quelconque) : c'est la définition même d'un
+     *    navigateur, ce qui attrape aussi les navigateurs inconnus ou installés
+     *    après coup ;
+     *  - OU son nom de paquet contient « browser ».
+     */
+    fun estBloqueeEnEntier(contexte: Context, paquet: String): Boolean {
+        if (paquet in NAVIGATEURS_AUTORISES) return false
+        if (paquet in applisBloquees) return true
+        if (paquet == contexte.packageName || paquet in PAQUETS_REGLAGES_BASE ||
+            paquet in PAQUETS_INSTALLATEUR || paquet in JAMAIS_BLOQUEES
+        ) return false
+        return cacheNavigateurs.getOrPut(paquet) { estNavigateur(contexte, paquet) }
+    }
+
+    private fun estNavigateur(contexte: Context, paquet: String): Boolean {
+        if (paquet in navigateurs) return true
+        val p = paquet.lowercase(Locale.ROOT)
+        if (MOTS_PAQUET_NAVIGATEUR.any { p.contains(it) }) return true
+        return try {
+            val pm = contexte.packageManager
+            listOf("http", "https").any { schema ->
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("$schema://exemple-mycontrol.com/")
+                ).addCategory(android.content.Intent.CATEGORY_BROWSABLE).setPackage(paquet)
+                @Suppress("DEPRECATION")
+                pm.queryIntentActivities(intent, 0).isNotEmpty()
+            }
+        } catch (_: Exception) {
+            false
         }
     }
 

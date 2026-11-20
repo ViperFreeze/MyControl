@@ -46,7 +46,10 @@ Dans l'appli, appuie sur **« Un navigateur passe à travers ? Diagnostic »** �
 **Liste blanche : seuls Chrome et Samsung Internet sont autorisés** (la navigation privée y reste bloquée). Tous les autres navigateurs sont bloqués en entier : dès qu'ils s'ouvrent, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Sont reconnus :
 - une longue liste de navigateurs connus (Edge, Brave, Firefox, Opera/GX, DuckDuckGo, Firefox Focus, Tor, Vivaldi, Kiwi, UC, Yandex, Via…) ;
 - **toute appli capable d'ouvrir n'importe quelle adresse web** (c'est la définition d'un navigateur) — y compris un navigateur inconnu ou installé plus tard ;
-- toute appli dont le nom de paquet contient « browser ».
+- toute appli dont le nom de paquet ou le nom affiché trahit un navigateur (« browser », « navigateur », « navegador », « incognito »…), hors explorateurs de fichiers ;
+- plus de 150 navigateurs connus, y compris les moins évidents : Ecosia, Qwant, Startpage, Kagi, Arc Search, Comet, Mull, Cromite, Vanadium, Mullvad Browser, navigateurs Xiaomi/Oppo/Vivo/Huawei/Honor, Yandex, Baidu, QQ, Quark, Whale, navigateurs « VPN » et « privés »…
+
+L'appli Google et Google Go restent utilisables, mais leur mode navigation privée est surveillé comme dans Chrome.
 
 La liste blanche (`NAVIGATEURS_AUTORISES` dans `Detection.kt`) est figée dans l'APK : `detection.json` peut seulement **ajouter** des applis à bloquer (`applis_bloquees`), jamais en autoriser. Pense à choisir Chrome ou Samsung Internet comme navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur).
 

@@ -37,6 +37,10 @@ object Detection {
         "com.kiwibrowser.browser",
         "com.mi.globalbrowser",
         "com.huawei.browser",
+        // Appli Google et Google Go : ont leur propre mode navigation privée,
+        // qui est surveillé (l'appli elle-même reste utilisable).
+        "com.google.android.googlequicksearchbox",
+        "com.google.android.apps.searchlite",
     )
 
     /**
@@ -84,6 +88,38 @@ object Detection {
         "com.microsoft.bing", "org.adblockplus.browser", "com.avast.android.secure.browser",
         "com.avg.android.secure.browser", "com.cake.browser", "com.explore.web.browser",
         "com.tcl.browser", "com.transsion.phoenix", "com.opera.app.news",
+        // Moteurs de recherche « écolo » / vie privée avec navigateur intégré
+        "com.ecosia.android.beta", "com.qwant.mobile", "com.startpage.mobile",
+        "com.kagi.search", "com.mojeek.app", "com.brave.search",
+        "ai.perplexity.comet", "company.thebrowser.arc",
+        // Forks de Firefox / Chromium
+        "org.mozilla.fennec_fdroid", "org.mozilla.fennec_aurora", "org.mozilla.firefox.nightly",
+        "org.mozilla.focus.beta", "org.mozilla.focus.nightly", "org.mozilla.reference.browser",
+        "us.spotco.mulch", "app.vanadium.browser", "org.chromium.chrome", "org.chromium.webview_shell",
+        "org.ungoogled.chromium.stable", "org.ungoogled.chromium.extensions.stable",
+        "com.thorium.browser", "org.lineageos.jelly", "org.midorinext.android",
+        "de.baumann.browser", "net.slions.fulguris.full.playstore", "net.slions.fulguris.full.fdroid",
+        "info.guardianproject.orfox", "org.torproject.android", "com.mullvad.browser",
+        "io.github.mthli.ninja", "com.chimbori.hermitcrab", "arun.com.chromer",
+        "com.jamal2367.styx", "acr.browser.lightning.plus",
+        // Navigateurs de constructeurs
+        "com.mi.globalbrowser.mini", "com.coloros.browser", "com.realme.browser",
+        "com.nearme.browser", "com.hihonor.baidu.browser", "com.talpa.hibrowser",
+        "com.lge.browser", "com.asus.browser", "com.zte.browser", "com.motorola.browser",
+        "com.htc.sense.browser", "com.sonyericsson.browser",
+        // Grand public / « légers » / VPN
+        "com.mx.browser", "com.mx.browser.star", "com.cloudmosa.puffinTV", "com.cloudmosa.puffinIncognito",
+        "com.yandex.browser.alpha", "com.yandex.browser.beta", "ru.yandex.searchplugin",
+        "com.baidu.browser.inter", "com.qihoo.browser", "com.tencent.mtt", "com.tencent.mtt.intl",
+        "com.sogou.mobile.explorer", "com.quark.browser", "com.ucturbo",
+        "com.norton.securebrowser", "com.kaspersky.safebrowser", "com.bitdefender.browser",
+        "com.tunnelbear.browser", "com.cyberghostvpn.browser", "com.epicbrowser.app",
+        "com.aloha.browser.lite", "com.opera.mini.android", "com.opera.max.global",
+        "com.smartcookie.browser", "com.quetta.browser", "com.yolo.browser",
+        "com.fast.browser", "com.lite.browser", "com.incognito.browser",
+        "com.private.browser", "privatebrowser.securebrowser.com.webbrowser",
+        "com.privatebrowser.securebrowser", "com.hld.anzenbokusu",
+        "com.whale.browser", "com.naver.whale", "com.sec.android.app.sbrowser.edge",
     )
 
     /**
@@ -91,7 +127,8 @@ object Detection {
      * navigateurs : jamais bloquées par la détection automatique.
      */
     private val JAMAIS_BLOQUEES = setOf(
-        "com.google.android.googlequicksearchbox", // Appli Google
+        "com.google.android.googlequicksearchbox", // Appli Google (mode privé surveillé)
+        "com.google.android.apps.searchlite",      // Google Go (mode privé surveillé)
         "com.google.android.gm",                   // Gmail
         "com.google.android.apps.docs",            // Drive
         "com.google.android.youtube",
@@ -105,7 +142,20 @@ object Detection {
     )
 
     /** Mots dans le nom de paquet qui trahissent un navigateur. */
-    private val MOTS_PAQUET_NAVIGATEUR = listOf("browser", "navigateur", "webbrowser")
+    private val MOTS_PAQUET_NAVIGATEUR = listOf(
+        "browser", "navigateur", "navegador", "browse", "incognito",
+        "privateweb", "secureweb", "webexplorer", "explorer.web",
+    )
+
+    /** Mots dans le NOM AFFICHÉ de l'appli (toutes langues courantes). */
+    private val MOTS_NOM_NAVIGATEUR = listOf(
+        "web browser", "browser web", "internet browser", "private browser",
+        "navigateur web", "navigateur internet", "navegador", "navigatore",
+        "incognito", "navigation privée", "webbrowser",
+    )
+
+    /** Faux positifs : explorateurs de FICHIERS, pas de sites web. */
+    private val MOTS_FICHIERS = listOf("file", "fichier", "document", "photo", "gallery", "music")
 
     /** Applis système d'où l'on peut désactiver ou désinstaller MyControl. */
     private val PAQUETS_REGLAGES_BASE = setOf(
@@ -311,9 +361,14 @@ object Detection {
     private fun estNavigateur(contexte: Context, paquet: String): Boolean {
         if (paquet in navigateurs) return true
         val p = paquet.lowercase(Locale.ROOT)
-        if (MOTS_PAQUET_NAVIGATEUR.any { p.contains(it) }) return true
+        val fichiers = MOTS_FICHIERS.any { p.contains(it) }
+        if (!fichiers && MOTS_PAQUET_NAVIGATEUR.any { p.contains(it) }) return true
         return try {
             val pm = contexte.packageManager
+            val nom = try {
+                pm.getApplicationLabel(pm.getApplicationInfo(paquet, 0)).toString().lowercase(Locale.ROOT)
+            } catch (_: Exception) { "" }
+            if (MOTS_NOM_NAVIGATEUR.any { nom.contains(it) }) return true
             listOf("http", "https").any { schema ->
                 val intent = android.content.Intent(
                     android.content.Intent.ACTION_VIEW,

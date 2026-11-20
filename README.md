@@ -43,7 +43,15 @@ Depuis la mise à jour « Opera GX renforcé », MyControl repère aussi :
 
 Dans l'appli, appuie sur **« Un navigateur passe à travers ? Diagnostic »** → **Démarrer (10 min)**. Ouvre le navigateur, essaie d'ouvrir un onglet privé, puis reviens dans MyControl → **Partager le rapport**. Le rapport liste les textes, identifiants et états (sélectionné, coché) des écrans du navigateur, ainsi que chaque blocage et sa raison. Il ne quitte le téléphone que si tu le partages. Avec ce rapport, il suffit le plus souvent d'ajouter un libellé ou un identifiant dans `detection.json`, sans réinstaller.
 
-**Samsung Internet et toute la famille Opera sont bloqués en entier** (Samsung Internet + Beta et Lite ; Opera, Opera Beta, **Opera GX**, Opera Mini + Beta, Opera Touch, Opera Crypto Browser) : dès qu'il s'ouvre, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Pense à choisir un autre navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur). D'autres applis peuvent être bloquées en entier sans réinstaller en les ajoutant à `applis_bloquees` dans `detection.json`.
+**Liste blanche : seuls Chrome et Samsung Internet sont autorisés** (la navigation privée y reste bloquée). Tous les autres navigateurs sont bloqués en entier : dès qu'ils s'ouvrent, MyControl renvoie à l'écran d'accueil, même quand une autre appli ouvre un lien dedans. Sont reconnus :
+- une longue liste de navigateurs connus (Edge, Brave, Firefox, Opera/GX, DuckDuckGo, Firefox Focus, Tor, Vivaldi, Kiwi, UC, Yandex, Via…) ;
+- **toute appli capable d'ouvrir n'importe quelle adresse web** (c'est la définition d'un navigateur) — y compris un navigateur inconnu ou installé plus tard ;
+- toute appli dont le nom de paquet ou le nom affiché trahit un navigateur (« browser », « navigateur », « navegador », « incognito »…), hors explorateurs de fichiers ;
+- plus de 150 navigateurs connus, y compris les moins évidents : Ecosia, Qwant, Startpage, Kagi, Arc Search, Comet, Mull, Cromite, Vanadium, Mullvad Browser, navigateurs Xiaomi/Oppo/Vivo/Huawei/Honor, Yandex, Baidu, QQ, Quark, Whale, navigateurs « VPN » et « privés »…
+
+L'appli Google et Google Go restent utilisables, mais leur mode navigation privée est surveillé comme dans Chrome.
+
+La liste blanche (`NAVIGATEURS_AUTORISES` dans `Detection.kt`) est figée dans l'APK : `detection.json` peut seulement **ajouter** des applis à bloquer (`applis_bloquees`), jamais en autoriser. Pense à choisir Chrome ou Samsung Internet comme navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur).
 
 ## Obtenir l'APK
 

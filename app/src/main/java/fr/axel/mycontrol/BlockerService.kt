@@ -301,23 +301,25 @@ class BlockerService : AccessibilityService() {
     private fun surveillerAppliBloquee(event: AccessibilityEvent, paquet: String) {
         when (event.eventType) {
             // Ouverture d'une fenêtre de l'appli : blocage immédiat.
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> bloquerAppli()
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> bloquerAppli(paquet)
             // Changement de contenu : on vérifie que l'appli est bien au
             // premier plan (pas une simple mise à jour en arrière-plan).
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
                 val auPremierPlan = rootInActiveWindow?.packageName?.toString()
-                if (auPremierPlan == paquet) bloquerAppli()
+                if (auPremierPlan == paquet) bloquerAppli(paquet)
             }
         }
     }
 
-    private fun bloquerAppli() {
+    private fun bloquerAppli(paquet: String) {
         val maintenant = SystemClock.elapsedRealtime()
         if (maintenant - dernierBlocageAppli < 1500) return
         dernierBlocageAppli = maintenant
         performGlobalAction(GLOBAL_ACTION_HOME)
         Stats.incrementer(this)
-        Toast.makeText(this, R.string.toast_appli_bloquee, Toast.LENGTH_SHORT).show()
+        val message = if (Detection.estAppliInterdite(paquet)) R.string.toast_appli_interdite
+            else R.string.toast_appli_bloquee
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     // --- Anti-désactivation ------------------------------------------------

@@ -60,6 +60,7 @@
     <!-- Toasts -->
     <string name="toast_bloque">Navigation privée bloquée par MyControl</string>
     <string name="toast_appli_bloquee">Ce navigateur est bloqué par MyControl. Utilise Chrome ou Samsung Internet.</string>
+    <string name="toast_appli_interdite">Cette appli (X / Telegram) est bloquée par MyControl.</string>
     <string name="toast_armee">Protection verrouillée. Tout est en place.</string>
     <string name="toast_deverrouille">Déverrouillé 5 minutes. Tu peux désinstaller.</string>
     <string name="toast_code_faux">Code incorrect.</string>

@@ -49,6 +49,8 @@ Dans l'appli, appuie sur **« Un navigateur passe à travers ? Diagnostic »** �
 - toute appli dont le nom de paquet ou le nom affiché trahit un navigateur (« browser », « navigateur », « navegador », « incognito »…), hors explorateurs de fichiers ;
 - plus de 150 navigateurs connus, y compris les moins évidents : Ecosia, Qwant, Startpage, Kagi, Arc Search, Comet, Mull, Cromite, Vanadium, Mullvad Browser, navigateurs Xiaomi/Oppo/Vivo/Huawei/Honor, Yandex, Baidu, QQ, Quark, Whale, navigateurs « VPN » et « privés »…
 
+**X (ex-Twitter) et Telegram sont bloqués en entier** (ainsi que X Lite, Telegram X, Telegram Web/bêta et les clients alternatifs comme Nekogram, Plus Messenger, Nicegram…) : dès qu'ils s'ouvrent, MyControl renvoie à l'écran d'accueil. Cette liste (`APPLIS_INTERDITES` dans `Detection.kt`) est figée dans l'APK et ne peut pas être levée par `detection.json`.
+
 L'appli Google et Google Go restent utilisables, mais leur mode navigation privée est surveillé comme dans Chrome.
 
 La liste blanche (`NAVIGATEURS_AUTORISES` dans `Detection.kt`) est figée dans l'APK : `detection.json` peut seulement **ajouter** des applis à bloquer (`applis_bloquees`), jamais en autoriser. Pense à choisir Chrome ou Samsung Internet comme navigateur par défaut (Paramètres → Applications → Choisir les applis par défaut → Navigateur).

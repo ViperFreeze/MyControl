@@ -123,6 +123,28 @@ object Detection {
     )
 
     /**
+     * Applis (hors navigateurs) interdites EN ENTIER : X (ex-Twitter) et
+     * Telegram, avec leurs variantes officielles et clients alternatifs.
+     * Figées dans l'APK : detection.json ne peut pas les débloquer.
+     */
+    val APPLIS_INTERDITES = setOf(
+        // X (ex-Twitter)
+        "com.twitter.android", "com.twitter.android.lite", "com.twitter.android.beta",
+        "com.x.android",
+        // Telegram (officiel, Play Store, site web, bêta) et Telegram X
+        "org.telegram.messenger", "org.telegram.messenger.web", "org.telegram.messenger.beta",
+        "org.telegram.messenger.lite", "org.thunderdog.challegram",
+        // Clients Telegram alternatifs
+        "org.telegram.plus", "tw.nekomimi.nekogram", "xyz.nextalone.nagram",
+        "nekox.messenger", "com.exteragram.messenger", "uz.unnarsx.cherrygram",
+        "org.forkgram.messenger", "it.octogram.android", "com.iMe.android",
+        "org.telegram.bgram", "ir.ilmili.telegraph", "app.nicegram",
+    )
+
+    /** X ou Telegram (pour afficher le bon message). */
+    fun estAppliInterdite(paquet: String) = paquet in APPLIS_INTERDITES
+
+    /**
      * Applis qui savent ouvrir n'importe quel lien web sans être des
      * navigateurs : jamais bloquées par la détection automatique.
      */
@@ -296,7 +318,7 @@ object Detection {
     @Volatile private var motsClic: List<String> = MOTS_CLIC_BASE
     @Volatile private var phrasesEcran: List<String> = PHRASES_ECRAN_BASE
     @Volatile private var idsEcran: List<String> = IDS_ECRAN_BASE
-    @Volatile private var applisBloquees: Set<String> = APPLIS_BLOQUEES_BASE
+    @Volatile private var applisBloquees: Set<String> = APPLIS_BLOQUEES_BASE + APPLIS_INTERDITES
     @Volatile private var lancementsPrives: List<String> = LANCEMENTS_PRIVES_BASE
 
     val NAVIGATEURS: Set<String> get() = navigateurs
@@ -323,7 +345,7 @@ object Detection {
             // Jamais d'appli système de réglages ni MyControl lui-même : ce
             // serait un moyen de se bloquer hors du téléphone.
             lancementsPrives = LANCEMENTS_PRIVES_BASE + lireListe(o, "lancements_prives").map { it.lowercase(Locale.ROOT) }
-            applisBloquees = APPLIS_BLOQUEES_BASE + lireListe(o, "applis_bloquees")
+            applisBloquees = APPLIS_BLOQUEES_BASE + APPLIS_INTERDITES + lireListe(o, "applis_bloquees")
                 .filter { it !in PAQUETS_REGLAGES_BASE && it != contexte.packageName && it !in NAVIGATEURS_AUTORISES }
             oublierNavigateurs()
         } catch (_: Exception) {

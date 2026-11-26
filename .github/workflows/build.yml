@@ -3,8 +3,11 @@ name: Compiler l'APK
 on:
   push:
     branches: [main]
+    # La version Windows a son propre workflow : pas de nouvel APK pour elle.
+    paths-ignore: ['windows/**', '.github/workflows/windows.yml']
   # Sur une pull request : on compile seulement (vérification), sans publier.
   pull_request:
+    paths-ignore: ['windows/**', '.github/workflows/windows.yml']
   workflow_dispatch:
 
 permissions:

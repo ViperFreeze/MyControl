@@ -28,6 +28,13 @@ New-Item -ItemType Directory -Force $faux | Out-Null
 Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $faux 'navigo.exe')
 New-Item -ItemType File -Force (Join-Path $faux '120.0.1.2\chrome.dll') | Out-Null
 Test-Cas (Join-Path $faux 'navigo.exe') $true
+# X et Telegram (appli de bureau) : bloqués en entier
+$tg = Join-Path $env:RUNNER_TEMP 'Telegram Desktop'
+New-Item -ItemType Directory -Force $tg | Out-Null
+Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $tg 'Telegram.exe')
+Test-Cas (Join-Path $tg 'Telegram.exe') $true
+Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $tg 'Unigram.exe')
+Test-Cas (Join-Path $tg 'Unigram.exe') $true
 # Programmes ordinaires
 Test-Cas "$env:windir\System32\notepad.exe" $false
 Test-Cas "$env:windir\explorer.exe" $false
@@ -43,10 +50,15 @@ $n = Set-MyControlStrategies
 Write-Host "Stratégies écrites : $n"
 if ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Google\Chrome').IncognitoModeAvailability -ne 1) { Write-Host 'ECHEC Chrome'; $echecs++ }
 if ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\URLBlocklist').'1' -ne '*') { Write-Host 'ECHEC Edge'; $echecs++ }
-if ((Test-Path 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist')) { Write-Host 'ECHEC Chrome bloqué !'; $echecs++ }
+$listeChrome = (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist').PSObject.Properties |
+    Where-Object { $_.Name -match '^\d+$' } | ForEach-Object { $_.Value }
+Write-Host "Chrome bloque : $($listeChrome -join ', ')"
+if ($listeChrome -contains '*') { Write-Host 'ECHEC Chrome entièrement bloqué !'; $echecs++ }
+if (-not ($listeChrome -contains 'x.com' -and $listeChrome -contains 'telegram.org')) { Write-Host 'ECHEC X/Telegram non bloqués dans Chrome'; $echecs++ }
 if ((Set-MyControlStrategies) -ne 0) { Write-Host 'ECHEC : réécriture inutile'; $echecs++ }
 Remove-MyControlStrategies
 if ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Google\Chrome' -ErrorAction SilentlyContinue).IncognitoModeAvailability) { Write-Host 'ECHEC retrait'; $echecs++ }
+if ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist' -ErrorAction SilentlyContinue).'1') { Write-Host 'ECHEC retrait liste Chrome'; $echecs++ }
 
 if ($echecs) { Write-Host "$echecs échec(s)"; exit 1 }
 Write-Host 'Tous les tests passent.'

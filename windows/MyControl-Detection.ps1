@@ -35,6 +35,14 @@ $script:RegexMarques = '(?i)(firefox|chromium|\bopera\b|\bbrave\b|vivaldi|librew
     'web browser|internet browser|navigateur web|navigateur internet|navegador)'
 $script:RegexPasNavigateur = '(?i)(webview2|thunderbird|edge update|\bupdater?\b)'
 
+# X (ex-Twitter) et Telegram : bloqués en entier, comme APPLIS_INTERDITES sur Android.
+# Applis de bureau, versions Microsoft Store et clients alternatifs.
+$script:AppsInterdites = @(
+    'telegram', 'telegramdesktop', 'unigram', 'kotatogram', 'ayugram', '64gram', 'forkgram',
+    'materialgram', 'exteragram', 'nekogram', 'nicegram', 'twitter', 'xcorp'
+)
+$script:RegexAppsInterdites = '(?i)(telegram|unigram|kotatogram|ayugram|\b64gram\b|twitter|\bX Corp)'
+
 $script:CacheVerdicts = @{}
 
 function Test-SigneParGoogle([string]$Chemin) {
@@ -59,9 +67,10 @@ function Test-MoteurNavigateur([string]$Dossier) {
     return $false
 }
 
-# Renvoie $true si le programme est un navigateur interdit.
+# Renvoie $true si le programme est interdit (navigateur autre que Chrome, X ou Telegram).
 function Get-VerdictNavigateur([string]$Chemin, [string]$Nom) {
     $nom = $Nom.ToLowerInvariant()
+    if ($script:AppsInterdites -contains $nom) { return $true }
     if ($script:Exceptions -contains $nom) { return $false }
 
     $windir = $env:windir.TrimEnd('\') + '\'
@@ -73,6 +82,7 @@ function Get-VerdictNavigateur([string]$Chemin, [string]$Nom) {
         try { $info = (Get-Item -LiteralPath $Chemin -ErrorAction Stop).VersionInfo } catch { }
         if ($info) {
             $texte = "$($info.FileDescription) | $($info.ProductName) | $($info.CompanyName)"
+            if ($texte -match $script:RegexAppsInterdites) { return $true }
             if ($texte -match $script:RegexPasNavigateur) { return $false }
             if ($texte -match $script:RegexMarques) { $ressemble = $true }
         }

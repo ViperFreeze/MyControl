@@ -1,5 +1,5 @@
 ﻿# MyControl (Windows) - stratégies officielles des navigateurs.
-# Chrome : navigation privée et mode Invité désactivés.
+# Chrome : navigation privée et mode Invité désactivés, X et Telegram bloqués.
 # Autres navigateurs : navigation privée désactivée ET toutes les adresses bloquées,
 # pour qu'ils restent inutilisables même s'ils arrivaient à s'ouvrir.
 
@@ -21,12 +21,16 @@ $script:StrategiesValeurs = @(
     @{ Cle = 'HKLM:\SOFTWARE\Policies\Mozilla\Firefox'; Nom = 'DisablePrivateBrowsing'; Valeur = 1 }
 )
 
-# Listes "toutes les adresses bloquées" (valeur "1" de la clé).
+# Listes d'adresses bloquées (valeurs "1", "2"... de la clé).
+# Chrome : uniquement X (ex-Twitter) et Telegram, sous-domaines compris.
+# Autres navigateurs : toutes les adresses.
 $script:StrategiesListes = @(
-    @{ Cle = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\URLBlocklist';            Valeur = '*' }
-    @{ Cle = 'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave\URLBlocklist';       Valeur = '*' }
-    @{ Cle = 'HKLM:\SOFTWARE\Policies\Chromium\URLBlocklist';                  Valeur = '*' }
-    @{ Cle = 'HKLM:\SOFTWARE\Policies\Mozilla\Firefox\WebsiteFilter\Block';    Valeur = '<all_urls>' }
+    @{ Cle = 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist'
+       Valeurs = @('x.com', 'twitter.com', 't.co', 'twimg.com', 'telegram.org', 'telegram.me', 't.me') }
+    @{ Cle = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\URLBlocklist';            Valeurs = @('*') }
+    @{ Cle = 'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave\URLBlocklist';       Valeurs = @('*') }
+    @{ Cle = 'HKLM:\SOFTWARE\Policies\Chromium\URLBlocklist';                  Valeurs = @('*') }
+    @{ Cle = 'HKLM:\SOFTWARE\Policies\Mozilla\Firefox\WebsiteFilter\Block';    Valeurs = @('<all_urls>') }
 )
 
 function Initialize-Cle([string]$Cle) {
@@ -48,10 +52,13 @@ function Set-MyControlStrategies {
     }
     foreach ($l in $script:StrategiesListes) {
         Initialize-Cle $l.Cle
-        $actuelle = (Get-ItemProperty -LiteralPath $l.Cle -Name '1' -ErrorAction SilentlyContinue).'1'
-        if ($actuelle -ne $l.Valeur) {
-            New-ItemProperty -LiteralPath $l.Cle -Name '1' -Value $l.Valeur -PropertyType String -Force | Out-Null
-            $ecrites++
+        for ($i = 0; $i -lt $l.Valeurs.Count; $i++) {
+            $n = [string]($i + 1)
+            $actuelle = (Get-ItemProperty -LiteralPath $l.Cle -Name $n -ErrorAction SilentlyContinue).$n
+            if ($actuelle -ne $l.Valeurs[$i]) {
+                New-ItemProperty -LiteralPath $l.Cle -Name $n -Value $l.Valeurs[$i] -PropertyType String -Force | Out-Null
+                $ecrites++
+            }
         }
     }
     return $ecrites
@@ -63,9 +70,12 @@ function Remove-MyControlStrategies {
         Remove-ItemProperty -LiteralPath $s.Cle -Name $s.Nom -ErrorAction SilentlyContinue
     }
     foreach ($l in $script:StrategiesListes) {
-        $actuelle = (Get-ItemProperty -LiteralPath $l.Cle -Name '1' -ErrorAction SilentlyContinue).'1'
-        if ($actuelle -eq $l.Valeur) {
-            Remove-ItemProperty -LiteralPath $l.Cle -Name '1' -ErrorAction SilentlyContinue
+        for ($i = 0; $i -lt $l.Valeurs.Count; $i++) {
+            $n = [string]($i + 1)
+            $actuelle = (Get-ItemProperty -LiteralPath $l.Cle -Name $n -ErrorAction SilentlyContinue).$n
+            if ($actuelle -eq $l.Valeurs[$i]) {
+                Remove-ItemProperty -LiteralPath $l.Cle -Name $n -ErrorAction SilentlyContinue
+            }
         }
     }
 }

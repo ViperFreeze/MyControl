@@ -4,6 +4,13 @@ Sur le PC, **seul Google Chrome est autorisé**, et sans navigation privée ni m
 Tous les autres navigateurs (Edge, Firefox, Brave, Opera / Opera GX, Vivaldi, Tor, navigateurs
 portables ou installés plus tard…) sont **fermés dès qu'ils s'ouvrent**.
 
+**X (ex-Twitter) et Telegram sont bloqués en entier**, comme sur Android :
+- les applis de bureau (Telegram Desktop, Unigram, Kotatogram, AyuGram, 64Gram… et l'appli X) sont
+  fermées dès qu'elles s'ouvrent ;
+- dans Chrome, les sites `x.com`, `twitter.com`, `t.co`, `twimg.com`, `telegram.org` (donc
+  Telegram Web), `t.me` et `telegram.me` sont bloqués, sous-domaines compris. Les tweets intégrés
+  dans d'autres sites ne s'affichent donc plus non plus.
+
 ## Télécharger
 
 Lien direct : <https://github.com/ViperFreeze/MyControl/releases/download/windows/MyControl-Windows.zip>
@@ -41,7 +48,7 @@ Deux protections qui se complètent :
    l'écran sur Windows Pro).
 
 2. **Stratégies officielles des navigateurs** (celles du contrôle parental et des entreprises) :
-   - Chrome : navigation privée et mode Invité désactivés ;
+   - Chrome : navigation privée et mode Invité désactivés, X et Telegram bloqués ;
    - Edge, Brave, Chromium, Firefox : navigation privée désactivée **et tous les sites bloqués**,
      pour qu'ils restent inutilisables même s'ils arrivaient à s'ouvrir une seconde.
 

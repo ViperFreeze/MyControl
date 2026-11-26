@@ -2,7 +2,7 @@
 
 Appli Android qui bloque la navigation privée (Incognito, InPrivate, Mode secret…) dans les principaux navigateurs.
 
-> **Version Windows** : dossier [`windows/`](windows/README.md) — seul Google Chrome y est autorisé (sans navigation privée), tous les autres navigateurs sont fermés dès qu'ils s'ouvrent.
+> **Version Windows** : dossier [`windows/`](windows/README.md) — seul Google Chrome y est autorisé (sans navigation privée), tous les autres navigateurs sont fermés dès qu'ils s'ouvrent ; X et Telegram y sont aussi bloqués (applis et sites).
 
 ## Fonctionnement
 

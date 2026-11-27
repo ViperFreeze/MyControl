@@ -1,0 +1,62 @@
+name: Paquet Windows
+
+on:
+  push:
+    branches: [main]
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe (PowerShell 5.1, celui de Windows)
+        shell: powershell
+        run: |
+          $erreur = $false
+          Get-ChildItem windows -Recurse -Filter *.ps1 | ForEach-Object {
+            $e = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$e) | Out-Null
+            foreach ($x in $e) { $erreur = $true; Write-Host "::error file=$($_.Name),line=$($x.Extent.StartLineNumber)::$($x.Message)" }
+            $octets = [IO.File]::ReadAllBytes($_.FullName)
+            if (-not ($octets[0] -eq 0xEF -and $octets[1] -eq 0xBB -and $octets[2] -eq 0xBF)) {
+              $erreur = $true; Write-Host "::error file=$($_.Name)::UTF-8 sans BOM : les accents seraient cassés sous Windows"
+            }
+          }
+          if ($erreur) { exit 1 }
+
+      - name: Tester la détection et les stratégies
+        shell: powershell
+        run: .\windows\tests\Test-MyControl.ps1
+
+      - name: Préparer le zip
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory MyControl-Windows | Out-Null
+          Copy-Item windows\*.ps1, windows\*.cmd, windows\README.md MyControl-Windows\
+          Compress-Archive MyControl-Windows MyControl-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyControl-Windows
+          path: MyControl-Windows.zip
+
+      # Release séparée : ne touche pas à la release "latest" de l'APK (mises à jour Android).
+      - name: Publier la Release "windows"
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows
+          name: MyControl pour Windows
+          body: |
+            Dernière version Windows, construite automatiquement depuis `main`.
+            Télécharge **MyControl-Windows.zip**, décompresse-le, puis double-clic sur `Installer-MyControl.cmd`.
+          files: MyControl-Windows.zip
+          make_latest: false

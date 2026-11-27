@@ -72,5 +72,25 @@ Remove-MyControlStrategies
 if ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Google\Chrome' -ErrorAction SilentlyContinue).IncognitoModeAvailability) { Write-Host 'ECHEC retrait'; $echecs++ }
 if ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist' -ErrorAction SilentlyContinue).'1') { Write-Host 'ECHEC retrait liste Chrome'; $echecs++ }
 
+# Désactivation : code seulement entre 4h et 5h, au moins 10 min après la demande
+. (Join-Path $racine 'Desactiver-MyControl.ps1') -FonctionsSeulement
+function D([string]$s) { [datetime]::ParseExact($s, 'yyyy-MM-dd HH:mm', $null) }
+$casCode = @(
+    @('2026-11-27 22:00', '2026-11-27 22:05', '2026-11-28 04:00'),   # le soir -> 4h le lendemain
+    @('2026-11-28 02:00', '2026-11-28 02:30', '2026-11-28 04:00'),   # la nuit -> 4h le jour même
+    @('2026-11-28 04:20', '2026-11-28 04:21', '2026-11-28 04:30'),   # pendant la plage -> +10 min
+    @('2026-11-28 04:55', '2026-11-28 04:56', '2026-11-29 04:00'),   # trop tard -> lendemain
+    @('2026-11-28 10:00', '2026-11-28 10:00', '2026-11-29 04:00')    # matin -> lendemain
+)
+foreach ($c in $casCode) {
+    $obtenu = Get-DebutCode (D $c[0]) (D $c[1])
+    $ok = $obtenu -eq (D $c[2])
+    Write-Host ("{0}  demande {1} -> code {2:yyyy-MM-dd HH:mm}" -f $(if ($ok) { 'OK  ' } else { 'ECHEC' }), $c[0], $obtenu)
+    if (-not $ok) { $echecs++ }
+}
+if (Test-CodeDisponible (D '2026-11-28 04:00') (D '2026-11-28 05:00')) { Write-Host 'ECHEC 5h00 acceptée'; $echecs++ }
+if (Test-CodeDisponible (D '2026-11-28 04:00') (D '2026-11-28 04:05')) { Write-Host 'ECHEC moins de 10 min'; $echecs++ }
+if (-not (Test-CodeDisponible (D '2026-11-27 23:00') (D '2026-11-28 04:59'))) { Write-Host 'ECHEC 4h59 refusée'; $echecs++ }
+
 if ($echecs) { Write-Host "$echecs échec(s)"; exit 1 }
 Write-Host 'Tous les tests passent.'

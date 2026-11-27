@@ -61,8 +61,9 @@ Deux protections qui se complètent :
 ## Désactiver
 
 Double-clic sur `Desactiver-MyControl.cmd` (aussi copié dans `C:\ProgramData\MyControl`) :
-**demande → 10 minutes d'attente → code à 6 chiffres à recopier** → tout est retiré.
-La demande expire au bout d'une heure.
+**demande → le code à 6 chiffres n'est donné qu'entre 4h et 5h du matin** (et au moins 10 minutes
+après la demande) → on le recopie avant 5h00 → tout est retiré. Passé 5h, il faut attendre le
+lendemain. Le script indique à quelle heure revenir ; une demande reste valable 32 heures.
 
 ## Limite importante
 

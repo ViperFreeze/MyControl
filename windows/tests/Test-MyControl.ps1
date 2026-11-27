@@ -35,6 +35,18 @@ Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $tg 'Telegram.exe')
 Test-Cas (Join-Path $tg 'Telegram.exe') $true
 Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $tg 'Unigram.exe')
 Test-Cas (Join-Path $tg 'Unigram.exe') $true
+# Applis d'IA : autorisées ; navigateurs IA (moteur Chromium embarqué) : bloqués
+$ia = Join-Path $env:RUNNER_TEMP 'IA'
+New-Item -ItemType Directory -Force $ia | Out-Null
+foreach ($n in 'Claude', 'ChatGPT', 'Copilot', 'Perplexity', 'Cursor', 'ollama app') {
+    Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $ia "$n.exe")
+    Test-Cas (Join-Path $ia "$n.exe") $false
+}
+$comet = Join-Path $env:RUNNER_TEMP 'Comet'
+New-Item -ItemType Directory -Force $comet | Out-Null
+Copy-Item "$env:windir\System32\notepad.exe" (Join-Path $comet 'perplexity.exe')
+New-Item -ItemType File -Force (Join-Path $comet '140.0.1.0\chrome.dll') | Out-Null
+Test-Cas (Join-Path $comet 'perplexity.exe') $true
 # Programmes ordinaires
 Test-Cas "$env:windir\System32\notepad.exe" $false
 Test-Cas "$env:windir\explorer.exe" $false

@@ -43,6 +43,19 @@ $script:AppsInterdites = @(
 )
 $script:RegexAppsInterdites = '(?i)(telegram|unigram|kotatogram|ayugram|\b64gram\b|twitter|\bX Corp)'
 
+# Applis d'IA : toujours autorisées (Claude, ChatGPT, Copilot, Perplexity, Gemini, Cursor,
+# Ollama, LM Studio...). Seule exception : les "navigateurs IA" (Comet, ChatGPT Atlas...) restent
+# bloqués, car ce sont de vrais navigateurs avec navigation privée. On les reconnaît à leur
+# moteur Chromium embarqué.
+$script:AppsIA = @(
+    'claude', 'chatgpt', 'codex', 'copilot', 'microsoft365copilot', 'm365copilot', 'perplexity',
+    'cursor', 'windsurf', 'ollama', 'ollama app', 'lm studio', 'lmstudio', 'jan', 'gpt4all', 'msty',
+    'mistral', 'lechat', 'gemini', 'deepseek', 'poe', 'grok', 'chatbox', 'anythingllm', 'notebooklm',
+    'kiro', 'trae', 'zed', 'warp'
+)
+$script:RegexIA = '(?i)(anthropic|openai|perplexity|anysphere|codeium|ollama|element labs|lm studio|' +
+    'mistral ai|deepseek|\bxai\b|chatgpt|\bclaude\b|\bcopilot\b|gemini|gpt4all|nomic|anythingllm)'
+
 $script:CacheVerdicts = @{}
 
 function Test-SigneParGoogle([string]$Chemin) {
@@ -68,6 +81,7 @@ function Test-MoteurNavigateur([string]$Dossier) {
 }
 
 # Renvoie $true si le programme est interdit (navigateur autre que Chrome, X ou Telegram).
+# Les applis d'IA ne sont jamais bloquées (voir $AppsIA).
 function Get-VerdictNavigateur([string]$Chemin, [string]$Nom) {
     $nom = $Nom.ToLowerInvariant()
     if ($script:AppsInterdites -contains $nom) { return $true }
@@ -80,12 +94,16 @@ function Get-VerdictNavigateur([string]$Chemin, [string]$Nom) {
     $info = $null
     if (-not $ressemble) {
         try { $info = (Get-Item -LiteralPath $Chemin -ErrorAction Stop).VersionInfo } catch { }
-        if ($info) {
-            $texte = "$($info.FileDescription) | $($info.ProductName) | $($info.CompanyName)"
-            if ($texte -match $script:RegexAppsInterdites) { return $true }
-            if ($texte -match $script:RegexPasNavigateur) { return $false }
-            if ($texte -match $script:RegexMarques) { $ressemble = $true }
+        $texte = if ($info) { "$($info.FileDescription) | $($info.ProductName) | $($info.CompanyName)" } else { '' }
+        if ($texte -match $script:RegexAppsInterdites) { return $true }
+
+        # Appli d'IA : autorisée, sauf si elle embarque un moteur de navigateur complet.
+        if (($script:AppsIA -contains $nom) -or ($texte -match $script:RegexIA)) {
+            if ($dansWindows -or -not (Test-MoteurNavigateur (Split-Path -Parent $Chemin))) { return $false }
+            $ressemble = $true
         }
+        elseif ($texte -match $script:RegexPasNavigateur) { return $false }
+        elseif ($texte -match $script:RegexMarques) { $ressemble = $true }
     }
     if (-not $ressemble -and -not $dansWindows) {
         $ressemble = Test-MoteurNavigateur (Split-Path -Parent $Chemin)

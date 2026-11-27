@@ -4,6 +4,12 @@ Sur le PC, **seul Google Chrome est autorisé**, et sans navigation privée ni m
 Tous les autres navigateurs (Edge, Firefox, Brave, Opera / Opera GX, Vivaldi, Tor, navigateurs
 portables ou installés plus tard…) sont **fermés dès qu'ils s'ouvrent**.
 
+**Les applis d'IA restent toujours utilisables** : Claude, ChatGPT, Codex, Copilot, Perplexity,
+Gemini, Mistral Le Chat, DeepSeek, Cursor, Windsurf, Ollama, LM Studio… ne sont jamais fermées,
+et leurs sites (claude.ai, chatgpt.com, gemini.google.com…) marchent normalement dans Chrome.
+Seuls les **navigateurs IA** (Perplexity Comet, ChatGPT Atlas…) restent bloqués : ce sont de vrais
+navigateurs, avec une navigation privée.
+
 **X (ex-Twitter) et Telegram sont bloqués en entier**, comme sur Android :
 - les applis de bureau (Telegram Desktop, Unigram, Kotatogram, AyuGram, 64Gram… et l'appli X) sont
   fermées dès qu'elles s'ouvrent ;
